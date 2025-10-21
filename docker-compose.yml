@@ -14,6 +14,17 @@ volumes:
   langfuse_clickhouse_data:
   langfuse_clickhouse_logs:
   langfuse_minio_data:
+  # KeikenV AI Services Extension - Shared Storage
+  shared_models:
+  shared_data:
+  shared_outputs:
+  # Individual AI service storage
+  presenton_data:
+  comfyui_data:
+  invokeai_data:
+  automatic1111_data:
+  mlflow_data:
+  litellm_data:
 
 x-n8n: &service-n8n
   image: n8nio/n8n:1.95.1  # Updated from latest for stability
@@ -28,6 +39,21 @@ x-n8n: &service-n8n
     - N8N_ENCRYPTION_KEY
     - N8N_USER_MANAGEMENT_JWT_SECRET
     - WEBHOOK_URL=${N8N_HOSTNAME:+https://}${N8N_HOSTNAME:-http://localhost:5678}
+
+# KeikenV AI Services Extension - Shared Templates
+x-ai-shared-volumes: &ai-shared-volumes
+  - ./shared/models:/shared_models:rw     # Shared model directory
+  - ./shared/data:/shared_data:rw         # Cross-service data sharing  
+  - ./shared/outputs:/shared_outputs:rw   # Generated content sharing
+
+x-gpu-nvidia: &gpu-nvidia
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            count: 1
+            capabilities: [gpu]
 
 x-ollama: &service-ollama
   image: ollama/ollama:latest
@@ -396,3 +422,160 @@ services:
     image: ollama/ollama:rocm
     depends_on:
      - ollama-gpu-amd
+
+  # =============================
+  # KEIKEN AI SERVICES EXTENSION  
+  # =============================
+
+  # PRESENTON - Presentation Service
+  presenton:
+    image: nginx:alpine
+    container_name: presenton
+    restart: unless-stopped
+    expose:
+      - 3000/tcp
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    volumes:
+      - presenton_data:/app/data
+      - ./shared/data:/shared_data:ro
+
+  # COMFYUI - AI Workflow Engine  
+  x-comfyui: &service-comfyui
+    image: yanwk/comfyui-boot:latest
+    container_name: comfyui
+    restart: unless-stopped
+    expose:
+      - 8188/tcp
+    environment:
+      - CLI_ARGS=--listen 0.0.0.0 --port 8188
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    volumes:
+      - comfyui_data:/root/.comfyui
+      - ./shared/models:/shared_models:rw
+      - ./shared/data:/shared_data:rw
+      - ./shared/outputs:/shared_outputs:rw
+      - ./shared/models/checkpoints:/root/ComfyUI/models/checkpoints:rw
+      - ./shared/models/lora:/root/ComfyUI/models/loras:rw
+      - ./shared/models/vae:/root/ComfyUI/models/vae:rw
+      - ./shared/models/controlnet:/root/ComfyUI/models/controlnet:rw
+      - ./shared/models/embeddings:/root/ComfyUI/models/embeddings:rw
+      - ./shared/models/upscale:/root/ComfyUI/models/upscale_models:rw
+      - ./shared/outputs/comfyui:/root/ComfyUI/output:rw
+
+  comfyui-cpu:
+    profiles: ["cpu"]
+    <<: *service-comfyui
+
+  comfyui-gpu:
+    profiles: ["gpu-nvidia"]
+    <<: [*service-comfyui, *gpu-nvidia]
+
+  # INVOKEAI - Stable Diffusion WebUI
+  x-invokeai: &service-invokeai
+    image: invokeai/invokeai:latest
+    container_name: invokeai
+    restart: unless-stopped
+    expose:
+      - 9090/tcp
+    environment:
+      - INVOKEAI_ROOT=/invokeai
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    volumes:
+      - invokeai_data:/invokeai
+      - ./shared/models:/shared_models:rw
+      - ./shared/data:/shared_data:rw
+      - ./shared/outputs:/shared_outputs:rw
+      - ./shared/models/checkpoints:/invokeai/models/main:rw
+      - ./shared/models/lora:/invokeai/models/lora:rw
+      - ./shared/models/vae:/invokeai/models/vae:rw
+      - ./shared/models/controlnet:/invokeai/models/controlnet:rw
+      - ./shared/models/embeddings:/invokeai/models/embeddings:rw
+      - ./shared/outputs/invokeai:/invokeai/outputs:rw
+
+  invokeai-cpu:
+    profiles: ["cpu"]
+    <<: *service-invokeai
+
+  invokeai-gpu:
+    profiles: ["gpu-nvidia"]
+    <<: [*service-invokeai, *gpu-nvidia]
+
+  # AUTOMATIC1111 - Popular SD WebUI
+  x-automatic1111: &service-automatic1111
+    image: vladmandic/automatic:latest
+    container_name: automatic1111
+    restart: unless-stopped
+    expose:
+      - 7860/tcp
+    environment:
+      - CLI_ARGS=--listen --port 7860 --allow-code --medvram --xformers --enable-insecure-extension-access
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    volumes:
+      - automatic1111_data:/data
+      - ./shared/models:/shared_models:rw
+      - ./shared/data:/shared_data:rw
+      - ./shared/outputs:/shared_outputs:rw
+      - ./shared/models/checkpoints:/data/StableDiffusion:rw
+      - ./shared/models/lora:/data/Lora:rw
+      - ./shared/models/vae:/data/VAE:rw
+      - ./shared/models/controlnet:/data/ControlNet:rw
+      - ./shared/models/embeddings:/data/embeddings:rw
+      - ./shared/models/upscale:/data/ESRGAN:rw
+      - ./shared/outputs/automatic1111:/data/outputs:rw
+
+  automatic1111-cpu:
+    profiles: ["cpu"]
+    <<: *service-automatic1111
+    environment:
+      - CLI_ARGS=--listen --port 7860 --use-cpu --precision full --no-half
+
+  automatic1111-gpu:
+    profiles: ["gpu-nvidia"]
+    <<: [*service-automatic1111, *gpu-nvidia]
+
+  # MLFLOW SERVER - ML Experiment Tracking
+  mlflow-server:
+    image: python:3.11-slim
+    container_name: mlflow-server
+    restart: unless-stopped
+    expose:
+      - 5000/tcp
+    environment:
+      - MLFLOW_BACKEND_STORE_URI=sqlite:////mlflow/mlflow.db
+      - MLFLOW_DEFAULT_ARTIFACT_ROOT=/mlflow/artifacts
+      - MLFLOW_HOST=0.0.0.0
+      - MLFLOW_PORT=5000
+    volumes:
+      - mlflow_data:/mlflow
+      - ./shared/mlflow:/shared_mlflow:rw
+    command: >
+      bash -c "pip install mlflow==2.8.1 &&
+               mlflow server
+               --backend-store-uri sqlite:////mlflow/mlflow.db
+               --default-artifact-root /mlflow/artifacts
+               --host 0.0.0.0
+               --port 5000"
+
+  # LITELLM - Universal LLM API Proxy
+  litellm:
+    image: python:3.11-slim
+    container_name: litellm
+    restart: unless-stopped
+    expose:
+      - 4000/tcp
+    environment:
+      - PORT=4000
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY:-sk-1234}
+      - DATABASE_URL=sqlite:////app/data/litellm.db
+      - OLLAMA_BASE_URL=http://ollama:11434
+    volumes:
+      - litellm_data:/app/data
+      - ./shared/data:/shared_data:ro
+    command: >
+      bash -c "pip install 'litellm[proxy]' backoff uvicorn fastapi &&
+               litellm --port 4000"

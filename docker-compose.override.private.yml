@@ -64,3 +64,31 @@ services:
   ollama-gpu-amd:
     ports:
       - 127.0.0.1:11434:11434
+
+  # =============================
+  # KEIKEN AI SERVICES - LOCAL ACCESS
+  # =============================
+  
+  presenton:
+    ports:
+      - 127.0.0.1:3032:80
+      
+  comfyui-gpu:
+    ports:
+      - 127.0.0.1:8188:8188
+      
+  invokeai-gpu:
+    ports:
+      - 127.0.0.1:9090:9090
+      
+  automatic1111-gpu:
+    ports:
+      - 127.0.0.1:7860:7860
+      
+  mlflow-server:
+    ports:
+      - 127.0.0.1:5000:5000
+      
+  litellm:
+    ports:
+      - 127.0.0.1:4000:4000
