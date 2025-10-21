@@ -563,7 +563,7 @@ services:
 
   # LITELLM - Universal LLM API Proxy
   litellm:
-    image: python:3.11-slim
+    image: python:3.11
     container_name: litellm
     restart: unless-stopped
     expose:
@@ -571,11 +571,25 @@ services:
     environment:
       - PORT=4000
       - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY:-sk-1234}
-      - DATABASE_URL=sqlite:////app/data/litellm.db
+      - DATABASE_URL=
       - OLLAMA_BASE_URL=http://ollama:11434
     volumes:
       - litellm_data:/app/data
       - ./shared/data:/shared_data:ro
+    working_dir: /app
     command: >
-      bash -c "pip install 'litellm[proxy]' backoff uvicorn fastapi &&
-               litellm --port 4000"
+      bash -c "
+        set -e &&
+        echo '=== Installing LiteLLM and dependencies ===' &&
+        pip install --no-cache-dir --upgrade pip setuptools wheel &&
+        echo 'Installing base dependencies...' &&
+        pip install --no-cache-dir backoff==2.2.1 tenacity uvicorn fastapi pydantic sqlalchemy prisma &&
+        echo 'Installing LiteLLM with proxy support...' &&
+        pip install --no-cache-dir 'litellm[proxy]>=1.40.0' &&
+        echo 'Creating config directory...' &&
+        mkdir -p /app/data &&
+        echo 'Generating Prisma client...' &&
+        prisma generate &&
+        echo '=== Starting LiteLLM server ===' &&
+        litellm --host 0.0.0.0 --port 4000
+      "
