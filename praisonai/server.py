@@ -8,6 +8,7 @@ import logging
 import os
 from datetime import datetime
 import uuid
+import requests
 
 # PraisonAI imports
 from praisonai import PraisonAI
@@ -174,70 +175,98 @@ AGENT_TEAMS = {
 
 # Internet search tool implementation
 def internet_search_tool(query: str) -> str:
-    """Simple internet search tool using DuckDuckGo"""
+    """Internet search tool using SearxNG service"""
     try:
-        from duckduckgo_search import DDGS
-        ddgs = DDGS()
-        results = []
+        # Use SearxNG service for web search
+        response = requests.get(
+            "http://searxng:8080/search",
+            params={"q": query, "format": "json", "categories": "general"},
+            timeout=10
+        )
         
-        for result in ddgs.text(keywords=query, max_results=5):
-            results.append(f"**{result.get('title', 'No Title')}**\n{result.get('body', 'No description')}\nURL: {result.get('href', '')}\n")
+        if response.status_code != 200:
+            logger.error(f"SearxNG returned status {response.status_code}")
+            return f"Search service error: HTTP {response.status_code}"
         
-        return "\n".join(results) if results else "No search results found."
+        data = response.json()
+        results = data.get("results", [])
+        
+        if not results:
+            return "No search results found."
+        
+        # Format top 5 results
+        formatted_results = []
+        for result in results[:5]:
+            title = result.get('title', 'No Title')
+            content = result.get('content', 'No description')
+            url = result.get('url', '')
+            formatted_results.append(f"**{title}**\n{content}\nURL: {url}\n")
+        
+        return "\n".join(formatted_results)
+        
+    except requests.exceptions.RequestException as e:
+        logger.error(f"SearxNG connection error: {e}")
+        return f"Search service unavailable: {str(e)}"
     except Exception as e:
         logger.error(f"Search error: {e}")
-        return f"Search unavailable: {str(e)}"
+        return f"Search failed: {str(e)}"
 
 async def create_agent_team(team_config: Dict, query: str) -> str:
-    """Create and run a PraisonAI agent team"""
+    """Create and run a PraisonAI agent team with real AI responses"""
     try:
-        # Build a workflow description using the team configuration
-        workflow_content = f"Framework: CrewAI\nTopic: {query}\n\n"
+        import requests
         
-        # Add agents section
-        workflow_content += "Agents:\n"
-        for agent_config in team_config["agents"]:
-            workflow_content += f"- {agent_config['name']}:\n"
-            workflow_content += f"    role: {agent_config['role']}\n"
-            workflow_content += f"    goal: {agent_config['goal']}\n"
-            workflow_content += f"    backstory: {agent_config['backstory']}\n"
-            if "internet_search" in agent_config.get("tools", []):
-                workflow_content += "    tools: [internet_search]\n"
-            workflow_content += "\n"
+        # Use Ollama for actual AI responses
+        ollama_url = "http://ollama:11434/api/generate"
         
-        # Add tasks section
-        workflow_content += "Tasks:\n"
-        for i, agent_config in enumerate(team_config["agents"]):
-            workflow_content += f"- task_{i+1}:\n"
-            workflow_content += f"    description: Process and analyze: {query}\n"
-            workflow_content += f"    agent: {agent_config['name']}\n"
-            workflow_content += f"    expected_output: Detailed analysis and recommendations\n\n"
-        
-        # Use PraisonAI to process this workflow
         logger.info(f"Executing PraisonAI workflow for query: {query}")
         
-        # Create a simple response based on the team configuration
-        response = f"**PraisonAI Team Response**\n\n"
-        response += f"Team: {team_config.get('name', 'Multi-Agent Team')}\n"
-        response += f"Query: {query}\n\n"
+        response = f"**{team_config.get('name', 'Multi-Agent Team')} Response**\n\n"
+        response += f"**Query:** {query}\n\n"
         
-        response += "**Team Analysis:**\n"
+        # Process each agent with real AI
         for agent_config in team_config["agents"]:
-            response += f"\n**{agent_config['name']} ({agent_config['role']})**\n"
-            response += f"Analysis: This {agent_config['role'].lower()} would focus on {agent_config['goal'].lower()} "
-            response += f"regarding '{query}'. "
+            agent_name = agent_config['name']
+            agent_role = agent_config['role']
+            agent_goal = agent_config['goal']
+            agent_backstory = agent_config['backstory']
             
+            # Create agent-specific prompt
+            agent_prompt = f"""You are {agent_name}, a {agent_role}.
+            
+Your goal: {agent_goal}
+Your background: {agent_backstory}
+
+Please provide a detailed, professional response to this question: {query}
+
+Focus on your expertise area and provide specific, actionable insights. Be thorough and informative."""
+
+            # Get search results if agent has internet search tool
+            search_context = ""
             if "internet_search" in agent_config.get("tools", []):
-                # Simulate internet search results
-                search_result = internet_search_tool(query)
-                response += f"\n\nResearch findings:\n{search_result[:500]}..."
+                search_results = internet_search_tool(query)
+                search_context = f"\n\nAvailable research data:\n{search_results[:1000]}\n\nUse this research to inform your response."
+                agent_prompt += search_context
+
+            try:
+                # Get AI response from Ollama
+                ollama_response = requests.post(ollama_url, json={
+                    "model": "llama3.1:8b",
+                    "prompt": agent_prompt,
+                    "stream": False
+                }, timeout=30)
+                
+                if ollama_response.status_code == 200:
+                    ai_response = ollama_response.json().get('response', 'No response generated')
+                else:
+                    ai_response = f"AI model unavailable. Using fallback analysis for {agent_role}."
+                    
+            except Exception as e:
+                logger.error(f"Ollama request failed: {e}")
+                ai_response = f"As a {agent_role}, I would focus on {agent_goal.lower()} regarding '{query}'. However, the AI model is currently unavailable for detailed analysis."
             
-            response += f"\n\nBackground: {agent_config['backstory']}\n"
-        
-        response += f"\n**Collaborative Recommendation:**\n"
-        response += f"Based on the multi-agent analysis of '{query}', the team recommends a comprehensive approach "
-        response += f"that combines {', '.join([agent['role'].lower() for agent in team_config['agents']])} perspectives. "
-        response += f"This collaborative analysis ensures thorough coverage of all aspects related to your request."
+            response += f"## {agent_name} ({agent_role})\n"
+            response += f"{ai_response}\n\n"
         
         return response
         
