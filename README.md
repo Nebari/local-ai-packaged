@@ -56,6 +56,8 @@ results from up to 229 search services. Users are neither tracked nor profiled, 
 
 ✅ [**Langfuse**](https://langfuse.com/) - Open source LLM engineering platform for agent observability
 
+✅ [**PraisonAI**](https://github.com/MervinPraison/PraisonAI) - Multi-agent framework with 4 specialized teams (Research, Coding, Business, Creative) integrated as OpenWebUI models
+
 ## Prerequisites
 
 Before you begin, make sure you have the following software installed:
@@ -286,6 +288,18 @@ you copied in a previous step.
 
 To open n8n at any time, visit <http://localhost:5678/> in your browser.
 To open Open WebUI at any time, visit <http://localhost:3000/>.
+
+### PraisonAI Multi-Agent Teams
+
+The stack includes PraisonAI multi-agent teams that appear as models in Open WebUI:
+
+- **Research Team** - For research and analysis tasks (3 agents: Researcher, Analyst, Writer)
+- **Coding Team** - For development and technical tasks (3 agents: Architect, Developer, QA)  
+- **Business Team** - For business analysis (3 agents: Business Analyst, Financial Analyst, Strategy Consultant)
+- **Creative Team** - For marketing and creative content (3 agents: Creative Director, Copywriter, Content Strategist)
+
+In Open WebUI, select one of these teams from the model dropdown to get multi-agent collaboration on your queries.
+You can also use the teams directly in n8n workflows via HTTP requests to `http://localhost:8766/teams/{team-id}/execute`.
 
 With your n8n instance, you’ll have access to over 400 integrations and a
 suite of basic and advanced AI nodes such as

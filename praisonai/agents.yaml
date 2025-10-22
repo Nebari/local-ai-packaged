@@ -1,0 +1,24 @@
+framework: crewai
+topic: Default Multi-Agent Task
+
+agents:
+  - name: "Research Specialist"
+    role: "Senior Research Analyst"
+    goal: "Uncover cutting-edge developments in {topic}"
+    backstory: "You are a seasoned research analyst with a knack for uncovering the latest developments in any field. Known for your ability to find the most relevant information and present it clearly and concisely."
+    tools:
+      - internet_search
+
+  - name: "Content Creator"
+    role: "Content Strategist"
+    goal: "Create compelling content on {topic}"
+    backstory: "You are a renowned content strategist, known for your insightful and engaging content. You transform complex concepts into accessible and compelling narratives."
+
+tasks:
+  - description: "Conduct a comprehensive analysis of the latest advancements in {topic}. Identify key trends, breakthrough technologies, and potential industry impacts."
+    expected_output: "A comprehensive 3 paragraphs analysis report in markdown format, with key findings, emerging trends, and strategic insights on {topic}."
+    agent: "Research Specialist"
+
+  - description: "Using the research findings, create compelling content about {topic} that explains its significance and potential applications."
+    expected_output: "A well-structured content piece in markdown format that makes {topic} accessible to a general audience while highlighting its importance and implications."
+    agent: "Content Creator"

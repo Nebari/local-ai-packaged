@@ -74,5 +74,13 @@ mem0.nebarisoftware.com {
 
 # OpenMemory MCP - Model Context Protocol Memory
 openmemory.nebarisoftware.com {
-    reverse_proxy openmemory-mcp:8765
+    reverse_proxy openmemory-mcp:8000
+}
+
+praisonai.nebarisoftware.com {
+    reverse_proxy praisonai-teams:8000
+}
+
+praisonai-ui.nebarisoftware.com {
+    reverse_proxy praisonai-ui:8501
 }

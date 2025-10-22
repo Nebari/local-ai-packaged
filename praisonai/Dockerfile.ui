@@ -1,0 +1,39 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    python3-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install PraisonAI with UI dependencies
+RUN pip install --no-cache-dir \
+    praisonai \
+    "praisonai[ui]" \
+    "praisonai[chat]" \
+    "praisonai[code]" \
+    chainlit \
+    fastapi \
+    uvicorn[standard] \
+    duckduckgo-search \
+    requests
+
+# Copy application files
+COPY . .
+
+# Create necessary directories
+RUN mkdir -p /app/data /app/.praison
+
+# Set environment variables for Chainlit
+ENV CHAINLIT_PORT=8082
+ENV CHAINLIT_APP_ROOT=/app/.praison
+ENV PYTHONUNBUFFERED=1
+
+# Expose the UI port
+EXPOSE 8082
+
+# Start the PraisonAI Chainlit UI
+CMD ["python", "-m", "praisonai", "ui"]

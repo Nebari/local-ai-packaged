@@ -1,0 +1,307 @@
+{
+  "name": "PraisonAI Multi-Agent Workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "f96b3d06-8d8c-4dd4-8b59-1c2f7a8e5d9a",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        320,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "b45f2e91-7c3d-4aab-9e8f-3a1b6c9d2e4f",
+      "name": "Team Selection",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        520,
+        300
+      ],
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "1a2b3c4d-5e6f-7g8h-9i0j-k1l2m3n4o5p6",
+              "leftValue": "{{ $json.team_type }}",
+              "rightValue": "research",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "2b3c4d5e-6f7g-8h9i-0j1k-l2m3n4o5p6q7",
+              "leftValue": "{{ $json.team_type }}",
+              "rightValue": "coding",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "3c4d5e6f-7g8h-9i0j-1k2l-m3n4o5p6q7r8",
+              "leftValue": "{{ $json.team_type }}",
+              "rightValue": "business",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "4d5e6f7g-8h9i-0j1k-2l3m-n4o5p6q7r8s9",
+              "leftValue": "{{ $json.team_type }}",
+              "rightValue": "creative",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "c1d2e3f4-g5h6-i7j8-k9l0-m1n2o3p4q5r6",
+      "name": "Route by Team",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        720,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://praisonai.nebarisoftware.com/teams/research-team/execute",
+        "sendBody": true,
+        "bodyContentType": "json",
+        "jsonBody": "{\n  \"query\": \"{{ $json.user_query }}\"\n}",
+        "options": {}
+      },
+      "id": "e3f4g5h6-i7j8-k9l0-m1n2-o3p4q5r6s7t8",
+      "name": "Research Team",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        920,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://praisonai.nebarisoftware.com/teams/coding-team/execute",
+        "sendBody": true,
+        "bodyContentType": "json",
+        "jsonBody": "{\n  \"query\": \"{{ $json.user_query }}\"\n}",
+        "options": {}
+      },
+      "id": "f4g5h6i7-j8k9-l0m1-n2o3-p4q5r6s7t8u9",
+      "name": "Coding Team",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        920,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://praisonai.nebarisoftware.com/teams/business-team/execute",
+        "sendBody": true,
+        "bodyContentType": "json",
+        "jsonBody": "{\n  \"query\": \"{{ $json.user_query }}\"\n}",
+        "options": {}
+      },
+      "id": "g5h6i7j8-k9l0-m1n2-o3p4-q5r6s7t8u9v0",
+      "name": "Business Team",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        920,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://praisonai.nebarisoftware.com/teams/creative-team/execute",
+        "sendBody": true,
+        "bodyContentType": "json",
+        "jsonBody": "{\n  \"query\": \"{{ $json.user_query }}\"\n}",
+        "options": {}
+      },
+      "id": "h6i7j8k9-l0m1-n2o3-p4q5-r6s7t8u9v0w1",
+      "name": "Creative Team",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        920,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "team_result",
+              "value": "{{ $json.result }}"
+            },
+            {
+              "name": "team_name",
+              "value": "{{ $json.team_name }}"
+            },
+            {
+              "name": "execution_time", 
+              "value": "{{ $json.timestamp }}"
+            },
+            {
+              "name": "response_summary",
+              "value": "Multi-agent analysis completed by {{ $json.team_name }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "i7j8k9l0-m1n2-o3p4-q5r6-s7t8u9v0w1x2",
+      "name": "Format Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        1120,
+        350
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Team Selection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Team Selection": {
+      "main": [
+        [
+          {
+            "node": "Route by Team",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Team": {
+      "main": [
+        [
+          {
+            "node": "Research Team",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Coding Team",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Business Team",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Creative Team",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Research Team": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Coding Team": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Business Team": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Creative Team": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {
+    "Team Selection": [
+      {
+        "team_type": "research",
+        "user_query": "What are the latest trends in artificial intelligence and machine learning for 2024?"
+      }
+    ]
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2024-10-22T14:30:00.000Z",
+      "updatedAt": "2024-10-22T14:30:00.000Z",
+      "id": "praisonai-workflows",
+      "name": "PraisonAI"
+    }
+  ],
+  "triggerCount": 0,
+  "updatedAt": "2024-10-22T14:30:00.000Z",
+  "versionId": "1.0.0"
+}
