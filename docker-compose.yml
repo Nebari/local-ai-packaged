@@ -192,6 +192,10 @@ services:
       - LITELLM_HOSTNAME=${LITELLM_HOSTNAME:-":8010"}
       - MLFLOW_HOSTNAME=${MLFLOW_HOSTNAME:-":8011"}
       - PRESENTON_HOSTNAME=${PRESENTON_HOSTNAME:-":8012"}
+      # AI Image Generation Services
+      - COMFYUI_HOSTNAME=${COMFYUI_HOSTNAME:-":8013"}
+      - INVOKEAI_HOSTNAME=${INVOKEAI_HOSTNAME:-":8014"}
+      - AUTOMATIC1111_HOSTNAME=${AUTOMATIC1111_HOSTNAME:-":8015"}
       - LETSENCRYPT_EMAIL=${LETSENCRYPT_EMAIL:-internal}
     cap_drop:
       - ALL
@@ -453,17 +457,17 @@ services:
 
   # COMFYUI - AI Workflow Engine  
   x-comfyui: &service-comfyui
-    image: yanwk/comfyui-boot:latest
+    image: yanwk/comfyui-boot:cu121
     container_name: comfyui
     restart: unless-stopped
-    expose:
-      - 8188/tcp
+    ports:
+      - "127.0.0.1:8188:8188"
     environment:
       - CLI_ARGS=--listen 0.0.0.0 --port 8188
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
     volumes:
-      - comfyui_data:/root/.comfyui
+      - comfyui_data:/root/ComfyUI
       - ./shared/models:/shared_models:rw
       - ./shared/data:/shared_data:rw
       - ./shared/outputs:/shared_outputs:rw
@@ -485,11 +489,11 @@ services:
 
   # INVOKEAI - Stable Diffusion WebUI
   x-invokeai: &service-invokeai
-    image: invokeai/invokeai:latest
+    image: ghcr.io/invoke-ai/invokeai:latest
     container_name: invokeai
     restart: unless-stopped
-    expose:
-      - 9090/tcp
+    ports:
+      - "127.0.0.1:9090:9090"
     environment:
       - INVOKEAI_ROOT=/invokeai
       - NVIDIA_VISIBLE_DEVICES=all
@@ -499,11 +503,11 @@ services:
       - ./shared/models:/shared_models:rw
       - ./shared/data:/shared_data:rw
       - ./shared/outputs:/shared_outputs:rw
-      - ./shared/models/checkpoints:/invokeai/models/main:rw
-      - ./shared/models/lora:/invokeai/models/lora:rw
-      - ./shared/models/vae:/invokeai/models/vae:rw
-      - ./shared/models/controlnet:/invokeai/models/controlnet:rw
-      - ./shared/models/embeddings:/invokeai/models/embeddings:rw
+      - ./shared/models/checkpoints:/invokeai/autoimport/main:rw
+      - ./shared/models/lora:/invokeai/autoimport/lora:rw
+      - ./shared/models/vae:/invokeai/autoimport/vae:rw
+      - ./shared/models/controlnet:/invokeai/autoimport/controlnet:rw
+      - ./shared/models/embeddings:/invokeai/autoimport/embedding:rw
       - ./shared/outputs/invokeai:/invokeai/outputs:rw
 
   invokeai-cpu:
@@ -516,27 +520,37 @@ services:
 
   # AUTOMATIC1111 - Popular SD WebUI
   x-automatic1111: &service-automatic1111
-    image: vladmandic/automatic:latest
+    image: continuumio/miniconda3:latest
     container_name: automatic1111
     restart: unless-stopped
-    expose:
-      - 7860/tcp
+    ports:
+      - "127.0.0.1:7860:7860"
     environment:
-      - CLI_ARGS=--listen --port 7860 --allow-code --medvram --xformers --enable-insecure-extension-access
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
     volumes:
-      - automatic1111_data:/data
+      - automatic1111_data:/workspace
       - ./shared/models:/shared_models:rw
       - ./shared/data:/shared_data:rw
       - ./shared/outputs:/shared_outputs:rw
-      - ./shared/models/checkpoints:/data/StableDiffusion:rw
-      - ./shared/models/lora:/data/Lora:rw
-      - ./shared/models/vae:/data/VAE:rw
-      - ./shared/models/controlnet:/data/ControlNet:rw
-      - ./shared/models/embeddings:/data/embeddings:rw
-      - ./shared/models/upscale:/data/ESRGAN:rw
-      - ./shared/outputs/automatic1111:/data/outputs:rw
+      - ./shared/models/checkpoints:/workspace/models/Stable-diffusion:rw
+      - ./shared/models/lora:/workspace/models/Lora:rw
+      - ./shared/models/vae:/workspace/models/VAE:rw
+      - ./shared/models/controlnet:/workspace/models/ControlNet:rw
+      - ./shared/models/embeddings:/workspace/embeddings:rw
+      - ./shared/models/upscale:/workspace/models/ESRGAN:rw
+      - ./shared/outputs/automatic1111:/workspace/outputs:rw
+    command: >
+      bash -c "
+      apt-get update && apt-get install -y git wget && 
+      cd /workspace && 
+      if [ ! -d 'stable-diffusion-webui' ]; then 
+        git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui.git
+      fi &&
+      cd stable-diffusion-webui &&
+      python -m pip install --upgrade pip &&
+      python launch.py --listen --port 7860 --allow-code --medvram --xformers --enable-insecure-extension-access --api --skip-torch-cuda-test
+      "
 
   automatic1111-cpu:
     profiles: ["cpu"]
