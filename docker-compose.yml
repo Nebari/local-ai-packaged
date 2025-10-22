@@ -31,6 +31,9 @@ volumes:
 
 x-n8n: &service-n8n
   image: n8nio/n8n:1.95.1  # Updated from latest for stability
+  networks:
+    - default
+    - keiken-network
   environment:
     - DB_TYPE=postgresdb
     - DB_POSTGRESDB_HOST=db
@@ -64,6 +67,9 @@ x-ollama: &service-ollama
   restart: unless-stopped
   expose:
     - 11434/tcp
+  networks:
+    - default
+    - keiken-network  # Connect to Keiken services like Perplexica
   environment:
     - OLLAMA_CONTEXT_LENGTH=8192
     - OLLAMA_FLASH_ATTENTION=1
@@ -89,6 +95,9 @@ services:
     container_name: flowise
     expose:
       - 3001/tcp
+    networks:
+      - default
+      - keiken-network
     environment:
         - PORT=3001
         - FLOWISE_USERNAME=${FLOWISE_USERNAME}
@@ -105,6 +114,9 @@ services:
     container_name: open-webui
     expose:
       - 8080/tcp
+    networks:
+      - default
+      - keiken-network
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
@@ -141,11 +153,17 @@ services:
     expose:
       - 6333/tcp
       - 6334/tcp
+    networks:
+      - default
+      - keiken-network
     volumes:
       - qdrant_storage:/qdrant/storage
 
   neo4j:
     image: neo4j:latest
+    networks:
+      - default
+      - keiken-network
     volumes:
         - ./neo4j/logs:/logs
         - ./neo4j/config:/config
@@ -269,6 +287,9 @@ services:
       REDIS_TLS_CA: ${REDIS_TLS_CA:-/certs/ca.crt}
       REDIS_TLS_CERT: ${REDIS_TLS_CERT:-/certs/redis.crt}
       REDIS_TLS_KEY: ${REDIS_TLS_KEY:-/certs/redis.key}
+    networks:
+      - default
+      - keiken-network
 
   langfuse-web:
     image: langfuse/langfuse:3
@@ -289,6 +310,9 @@ services:
       LANGFUSE_INIT_USER_EMAIL: ${LANGFUSE_INIT_USER_EMAIL:-}
       LANGFUSE_INIT_USER_NAME: ${LANGFUSE_INIT_USER_NAME:-}
       LANGFUSE_INIT_USER_PASSWORD: ${LANGFUSE_INIT_USER_PASSWORD:-}
+    networks:
+      - default
+      - keiken-network
 
   clickhouse:
     image: clickhouse/clickhouse-server
@@ -311,6 +335,9 @@ services:
       timeout: 5s
       retries: 10
       start_period: 1s
+    networks:
+      - default
+      - keiken-network
 
   minio:
     image: minio/minio
@@ -332,6 +359,9 @@ services:
       timeout: 5s
       retries: 5
       start_period: 1s
+    networks:
+      - default
+      - keiken-network
 
   postgres:
     image: postgres:${POSTGRES_VERSION:-latest}
@@ -349,6 +379,9 @@ services:
       POSTGRES_DB: postgres
     volumes:
       - langfuse_postgres_data:/var/lib/postgresql/data
+    networks:
+      - default
+      - keiken-network
 
   redis:
     container_name: redis
@@ -375,6 +408,9 @@ services:
       interval: 3s
       timeout: 10s
       retries: 10
+    networks:
+      - default
+      - keiken-network
 
   searxng:
     container_name: searxng
@@ -399,6 +435,9 @@ services:
       options:
         max-size: "1m"
         max-file: "1"
+    networks:
+      - default
+      - keiken-network
 
   ollama-cpu:
     profiles: ["cpu"]
@@ -459,6 +498,9 @@ services:
     volumes:
       - presenton_data:/app/data
       - ./shared/data:/shared_data:ro
+    networks:
+      - default
+      - keiken-network
 
   # COMFYUI - AI Workflow Engine  
   x-comfyui: &service-comfyui
@@ -483,6 +525,9 @@ services:
       - ./shared/models/embeddings:/root/ComfyUI/models/embeddings:rw
       - ./shared/models/upscale:/root/ComfyUI/models/upscale_models:rw
       - ./shared/outputs/comfyui:/root/ComfyUI/output:rw
+    networks:
+      - default
+      - keiken-network
 
   comfyui-cpu:
     profiles: ["cpu"]
@@ -514,6 +559,9 @@ services:
       - ./shared/models/controlnet:/invokeai/autoimport/controlnet:rw
       - ./shared/models/embeddings:/invokeai/autoimport/embedding:rw
       - ./shared/outputs/invokeai:/invokeai/outputs:rw
+    networks:
+      - default
+      - keiken-network
 
   invokeai-cpu:
     profiles: ["cpu"]
@@ -565,6 +613,9 @@ services:
       pip install xformers --index-url https://download.pytorch.org/whl/cu121 &&
       python launch.py --listen --port 7860 --medvram --xformers --enable-insecure-extension-access --api --allow-code --skip-torch-cuda-test
       "
+    networks:
+      - default
+      - keiken-network
 
   automatic1111-cpu:
     profiles: ["cpu"]
@@ -598,6 +649,9 @@ services:
                --default-artifact-root /mlflow/artifacts
                --host 0.0.0.0
                --port 5000"
+    networks:
+      - default
+      - keiken-network
 
   # LITELLM - Universal LLM API Proxy
   litellm:
@@ -614,6 +668,9 @@ services:
       - litellm_data:/app/data
       - ./shared/data:/shared_data:ro
     command: ["--host", "0.0.0.0", "--port", "4000", "--model", "ollama_chat/llama3.1:latest", "--api_base", "http://ollama:11434"]
+    networks:
+      - default
+      - keiken-network
 
   # PERPLEXICA - AI-powered search engine
   perplexica:
