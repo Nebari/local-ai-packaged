@@ -529,26 +529,34 @@ services:
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
       - PYTHONUNBUFFERED=1
+      - DEBIAN_FRONTEND=noninteractive
+      - TZ=UTC
     volumes:
       - automatic1111_data:/workspace
       - ./shared/models:/shared_models:rw
       - ./shared/data:/shared_data:rw
       - ./shared/outputs:/shared_outputs:rw
-      - ./shared/models/checkpoints:/workspace/stable-diffusion-webui/models/Stable-diffusion:rw
-      - ./shared/models/lora:/workspace/stable-diffusion-webui/models/Lora:rw
-      - ./shared/models/vae:/workspace/stable-diffusion-webui/models/VAE:rw
-      - ./shared/models/controlnet:/workspace/stable-diffusion-webui/models/ControlNet:rw
-      - ./shared/models/embeddings:/workspace/stable-diffusion-webui/embeddings:rw
-      - ./shared/models/upscale:/workspace/stable-diffusion-webui/models/ESRGAN:rw
-      - ./shared/outputs/automatic1111:/workspace/stable-diffusion-webui/outputs:rw
+      - ./shared/models/checkpoints:/workspace/models/Stable-diffusion:rw
+      - ./shared/models/lora:/workspace/models/Lora:rw
+      - ./shared/models/vae:/workspace/models/VAE:rw
+      - ./shared/models/controlnet:/workspace/models/ControlNet:rw
+      - ./shared/models/embeddings:/workspace/embeddings:rw
+      - ./shared/models/upscale:/workspace/models/ESRGAN:rw
+      - ./shared/outputs/automatic1111:/workspace/outputs:rw
     working_dir: /workspace
     command: >
       bash -c "
-      apt-get update && apt-get install -y git wget curl &&
-      if [ ! -d 'stable-diffusion-webui' ]; then 
-        git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui.git
+      apt-get update && apt-get install -y git wget curl libgl1-mesa-glx libglib2.0-0 &&
+      if [ ! -f '/workspace/launch.py' ]; then 
+        echo 'Cloning Stable Diffusion WebUI...' &&
+        git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui.git /tmp/sd-webui &&
+        echo 'Copying files to workspace...' &&
+        cd /tmp/sd-webui &&
+        cp -r * /workspace/ &&
+        cp -r .[^.]* /workspace/ 2>/dev/null || true &&
+        echo 'Setup complete, files copied to workspace.'
       fi &&
-      cd stable-diffusion-webui &&
+      cd /workspace &&
       pip install xformers --index-url https://download.pytorch.org/whl/cu121 &&
       python launch.py --listen --port 7860 --medvram --xformers --enable-insecure-extension-access --api --allow-code --skip-torch-cuda-test
       "
