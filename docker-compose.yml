@@ -25,6 +25,9 @@ volumes:
   automatic1111_data:
   mlflow_data:
   litellm_data:
+  # Perplexica AI Search Engine
+  perplexica_data:
+  perplexica_uploads:
 
 x-n8n: &service-n8n
   image: n8nio/n8n:1.95.1  # Updated from latest for stability
@@ -196,6 +199,8 @@ services:
       - COMFYUI_HOSTNAME=${COMFYUI_HOSTNAME:-":8013"}
       - INVOKEAI_HOSTNAME=${INVOKEAI_HOSTNAME:-":8014"}
       - AUTOMATIC1111_HOSTNAME=${AUTOMATIC1111_HOSTNAME:-":8015"}
+      # AI Search Services
+      - PERPLEXICA_HOSTNAME=${PERPLEXICA_HOSTNAME:-":8016"}
       - LETSENCRYPT_EMAIL=${LETSENCRYPT_EMAIL:-internal}
     cap_drop:
       - ALL
@@ -609,6 +614,24 @@ services:
       - litellm_data:/app/data
       - ./shared/data:/shared_data:ro
     command: ["--host", "0.0.0.0", "--port", "4000", "--model", "ollama_chat/llama3.1:latest", "--api_base", "http://ollama:11434"]
+
+  # PERPLEXICA - AI-powered search engine
+  perplexica:
+    image: itzcrazykns1337/perplexica:latest
+    container_name: perplexica
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - perplexica_data:/home/perplexica/data
+      - perplexica_uploads:/home/perplexica/uploads
+      - ./shared/data:/shared_data:rw
+    networks:
+      - keiken-network
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - searxng
 
 # Network configuration
 networks:

@@ -3,59 +3,66 @@
 }
 
 # N8N
-{ $N8N_HOSTNAME } {
+n8n.nebarisoftware.com {
     reverse_proxy n8n:5678
 }
 
 # Open WebUI
-{ $WEBUI_HOSTNAME } {
+openwebui.nebarisoftware.com {
     reverse_proxy open-webui:8080
 }
 
 # Flowise
-{ $FLOWISE_HOSTNAME } {
+flowise.nebarisoftware.com {
     reverse_proxy flowise:3001
 }
 
 # Langfuse
-{ $LANGFUSE_HOSTNAME } {
-    reverse_proxy langfuse-web:3000
+langfuse.nebarisoftware.com {
+    reverse_proxy local-ai-packaged-langfuse-web-1:3000
 }
 
-# Ollama API
-{ $OLLAMA_HOSTNAME } {
-    reverse_proxy ollama:11434
+# Ollama
+ollama.nebarisoftware.com {
+    reverse_proxy host.docker.internal:11434
 }
 
 # Supabase
-{ $SUPABASE_HOSTNAME } {
-    reverse_proxy kong:8000
+supabase.nebarisoftware.com {
+    reverse_proxy supabase-kong:8000
 }
 
 # Neo4j
-{ $NEO4J_HOSTNAME } {
-    reverse_proxy neo4j:7474
+neo4j.nebarisoftware.com {
+    reverse_proxy local-ai-packaged-neo4j-1:7474
 }
 
 # SearXNG
-{ $SEARXNG_HOSTNAME } {
+searxng.nebarisoftware.com {
     reverse_proxy searxng:8080
 }
 
-# AI Image Generation Services
-# ComfyUI - Node-based AI workflow engine
-{ $COMFYUI_HOSTNAME } {
+# MLflow
+mlflow.nebarisoftware.com {
+    reverse_proxy mlflow-server:5000
+}
+
+# ComfyUI - AI Image Generation
+comfyui.nebarisoftware.com {
     reverse_proxy comfyui:8188
 }
 
-# InvokeAI - Professional Stable Diffusion WebUI
-{ $INVOKEAI_HOSTNAME } {
+# InvokeAI - AI Image Generation
+invokeai.nebarisoftware.com {
     reverse_proxy invokeai:9090
 }
 
-# Automatic1111 - Popular Stable Diffusion WebUI
-{ $AUTOMATIC1111_HOSTNAME } {
+# Automatic1111 - AI Image Generation
+automatic1111.nebarisoftware.com {
     reverse_proxy automatic1111:7860
 }
 
-import /etc/caddy/addons/*.conf
+# Perplexica - AI-powered search engine
+perplexica.nebarisoftware.com {
+    reverse_proxy perplexica:3000
+}
