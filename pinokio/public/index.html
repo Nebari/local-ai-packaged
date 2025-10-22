@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pinokio Web - AI App Launcher</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .status-bar {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 30px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+        
+        .apps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .app-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .app-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+        }
+        
+        .app-header {
+            display: flex;
+            justify-content: between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+        
+        .app-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .app-category {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-left: auto;
+        }
+        
+        .app-description {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        
+        .app-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #5a6fd8, #6a4190);
+            transform: translateY(-2px);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #00b09b, #96c93d);
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: linear-gradient(135deg, #009688, #8bc34a);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: linear-gradient(135deg, #ff5252, #e53935);
+        }
+        
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #6c757d;
+            border: 1px solid #dee2e6;
+        }
+        
+        .btn-secondary:hover {
+            background: #e9ecef;
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        
+        .app-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .status-running {
+            background: rgba(76, 175, 80, 0.1);
+            color: #4caf50;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+        
+        .status-stopped {
+            background: rgba(158, 158, 158, 0.1);
+            color: #9e9e9e;
+            border: 1px solid rgba(158, 158, 158, 0.3);
+        }
+        
+        .status-installing {
+            background: rgba(255, 193, 7, 0.1);
+            color: #ffc107;
+            border: 1px solid rgba(255, 193, 7, 0.3);
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification.success {
+            border-left: 4px solid #4caf50;
+        }
+        
+        .notification.error {
+            border-left: 4px solid #f44336;
+        }
+        
+        .notification.info {
+            border-left: 4px solid #2196f3;
+        }
+        
+        .logs-container {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            line-height: 1.4;
+            display: none;
+        }
+        
+        .port-links {
+            margin-top: 10px;
+        }
+        
+        .port-link {
+            display: inline-block;
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+            padding: 5px 10px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 0.85rem;
+            margin-right: 8px;
+            border: 1px solid rgba(102, 126, 234, 0.3);
+        }
+        
+        .port-link:hover {
+            background: rgba(102, 126, 234, 0.2);
+        }
+        
+        @media (max-width: 768px) {
+            .apps-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .status-bar {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+            
+            .app-actions {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Pinokio Web</h1>
+            <p>AI Application Launcher for KeikenV Platform</p>
+        </div>
+        
+        <div class="status-bar">
+            <div class="status-item">
+                <span>📦 Installed Apps:</span>
+                <span class="status-badge" id="installed-count">0</span>
+            </div>
+            <div class="status-item">
+                <span>🏃 Running Apps:</span>
+                <span class="status-badge" id="running-count">0</span>
+            </div>
+            <div class="status-item">
+                <span>🔄 Connection:</span>
+                <span class="status-badge" id="connection-status">Connecting...</span>
+            </div>
+        </div>
+        
+        <div class="apps-grid" id="apps-grid">
+            <!-- Apps will be loaded here -->
+        </div>
+    </div>
+    
+    <div id="notification" class="notification">
+        <div id="notification-message"></div>
+    </div>
+    
+    <script>
+        class PinokioWeb {
+            constructor() {
+                this.apps = [];
+                this.ws = null;
+                this.init();
+            }
+            
+            init() {
+                this.connectWebSocket();
+                this.loadApps();
+                setInterval(() => this.updateStatus(), 5000);
+            }
+            
+            connectWebSocket() {
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsUrl = `${protocol}//${window.location.host}`;
+                
+                this.ws = new WebSocket(wsUrl);
+                
+                this.ws.onopen = () => {
+                    console.log('WebSocket connected');
+                    document.getElementById('connection-status').textContent = 'Connected';
+                    document.getElementById('connection-status').style.background = 'rgba(76, 175, 80, 0.3)';
+                };
+                
+                this.ws.onmessage = (event) => {
+                    const message = JSON.parse(event.data);
+                    this.handleWebSocketMessage(message);
+                };
+                
+                this.ws.onclose = () => {
+                    console.log('WebSocket disconnected');
+                    document.getElementById('connection-status').textContent = 'Disconnected';
+                    document.getElementById('connection-status').style.background = 'rgba(244, 67, 54, 0.3)';
+                    
+                    // Reconnect after 3 seconds
+                    setTimeout(() => this.connectWebSocket(), 3000);
+                };
+            }
+            
+            handleWebSocketMessage(message) {
+                switch(message.type) {
+                    case 'app_status':
+                        this.updateAppStatus(message);
+                        break;
+                    case 'install_progress':
+                    case 'start_progress':
+                    case 'stop_progress':
+                        this.showNotification(message.message, 'info');
+                        break;
+                    case 'install_complete':
+                    case 'start_complete':
+                    case 'stop_complete':
+                        this.showNotification(message.message, 'success');
+                        this.loadApps(); // Refresh app list
+                        break;
+                    case 'install_error':
+                    case 'start_error':
+                    case 'stop_error':
+                        this.showNotification(message.error, 'error');
+                        this.loadApps(); // Refresh app list
+                        break;
+                }
+            }
+            
+            async loadApps() {
+                try {
+                    this.showNotification('Loading apps from Pinokio discovery system...', 'info');
+                    const response = await fetch('/api/apps');
+                    this.apps = await response.json();
+                    this.renderApps();
+                    this.updateCounts();
+                    
+                    const featuredCount = this.apps.filter(app => app.type === 'featured').length;
+                    const communityCount = this.apps.filter(app => app.type === 'community').length;
+                    const fallbackCount = this.apps.filter(app => app.type === 'fallback').length;
+                    
+                    if (featuredCount > 0 || communityCount > 0) {
+                        this.showNotification(`Loaded ${featuredCount} featured apps and ${communityCount} community apps from Pinokio`, 'success');
+                    } else if (fallbackCount > 0) {
+                        this.showNotification(`Using ${fallbackCount} fallback apps (Pinokio discovery unavailable)`, 'warning');
+                    }
+                } catch (error) {
+                    console.error('Error loading apps:', error);
+                    this.showNotification('Failed to load apps', 'error');
+                }
+            }
+            
+            renderApps() {
+                const grid = document.getElementById('apps-grid');
+                grid.innerHTML = '';
+                
+                this.apps.forEach(app => {
+                    const appCard = this.createAppCard(app);
+                    grid.appendChild(appCard);
+                });
+            }
+            
+            createAppCard(app) {
+                const card = document.createElement('div');
+                card.className = 'app-card';
+                card.innerHTML = `
+                    <div class="app-header">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            ${app.githubImage ? `<img src="${app.githubImage}" alt="${app.name}" style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid #ddd;">` : ''}
+                            <div>
+                                <div class="app-title">${app.name}</div>
+                                ${app.type === 'featured' ? '<span style="font-size: 0.7rem; color: #28a745; font-weight: bold;">✓ VERIFIED</span>' : 
+                                  app.type === 'community' ? '<span style="font-size: 0.7rem; color: #007bff; font-weight: bold;">🌟 COMMUNITY</span>' : 
+                                  '<span style="font-size: 0.7rem; color: #6c757d; font-weight: bold;">📦 FALLBACK</span>'}
+                            </div>
+                        </div>
+                        <div class="app-category">${app.category}</div>
+                    </div>
+                    <div class="app-description">${app.description}</div>
+                    ${app.repository ? `<div style="margin: 8px 0; font-size: 0.8rem; color: #666;">
+                        <a href="${app.repository}" target="_blank" style="color: #007bff; text-decoration: none;">📖 ${app.repository.replace('https://github.com/', '')}</a>
+                    </div>` : ''}
+                    <div class="app-actions">
+                        ${this.getAppButtons(app)}
+                    </div>
+                    ${this.getAppStatus(app)}
+                    ${this.getPortLinks(app)}
+                    <div class="logs-container" id="logs-${app.id}"></div>
+                `;
+                
+                return card;
+            }
+            
+            getAppButtons(app) {
+                let buttons = '';
+                
+                if (!app.installed) {
+                    buttons += `<button class="btn btn-primary" onclick="pinokio.installApp('${app.id}')">
+                        📥 Install
+                    </button>`;
+                } else if (!app.running) {
+                    buttons += `<button class="btn btn-success" onclick="pinokio.startApp('${app.id}')">
+                        ▶️ Start
+                    </button>`;
+                } else {
+                    buttons += `<button class="btn btn-danger" onclick="pinokio.stopApp('${app.id}')">
+                        ⏹️ Stop
+                    </button>`;
+                }
+                
+                if (app.installed) {
+                    buttons += `<button class="btn btn-secondary" onclick="pinokio.showLogs('${app.id}')">
+                        📋 Logs
+                    </button>`;
+                }
+                
+                return buttons;
+            }
+            
+            getAppStatus(app) {
+                let statusClass = 'status-stopped';
+                let statusText = '⚪ Stopped';
+                
+                if (app.running) {
+                    statusClass = 'status-running';
+                    statusText = '🟢 Running';
+                } else if (!app.installed) {
+                    statusText = '⚫ Not Installed';
+                }
+                
+                return `<div class="app-status ${statusClass}">
+                    <span>${statusText}</span>
+                </div>`;
+            }
+            
+            getPortLinks(app) {
+                if (!app.running || !app.ports) return '';
+                
+                const links = Object.entries(app.ports).map(([hostPort, containerPort]) => {
+                    return `<a href="http://localhost:${hostPort}" target="_blank" class="port-link">
+                        🌐 Port ${hostPort}
+                    </a>`;
+                }).join('');
+                
+                return links ? `<div class="port-links">${links}</div>` : '';
+            }
+            
+            async installApp(appId) {
+                try {
+                    const response = await fetch(`/api/apps/${appId}/install`, {
+                        method: 'POST'
+                    });
+                    
+                    if (response.ok) {
+                        this.showNotification(`Installing ${appId}...`, 'info');
+                    } else {
+                        const error = await response.json();
+                        this.showNotification(`Install failed: ${error.error}`, 'error');
+                    }
+                } catch (error) {
+                    this.showNotification(`Install failed: ${error.message}`, 'error');
+                }
+            }
+            
+            async startApp(appId) {
+                try {
+                    const response = await fetch(`/api/apps/${appId}/start`, {
+                        method: 'POST'
+                    });
+                    
+                    if (response.ok) {
+                        this.showNotification(`Starting ${appId}...`, 'info');
+                    } else {
+                        const error = await response.json();
+                        this.showNotification(`Start failed: ${error.error}`, 'error');
+                    }
+                } catch (error) {
+                    this.showNotification(`Start failed: ${error.message}`, 'error');
+                }
+            }
+            
+            async stopApp(appId) {
+                try {
+                    const response = await fetch(`/api/apps/${appId}/stop`, {
+                        method: 'POST'
+                    });
+                    
+                    if (response.ok) {
+                        this.showNotification(`Stopping ${appId}...`, 'info');
+                    } else {
+                        const error = await response.json();
+                        this.showNotification(`Stop failed: ${error.error}`, 'error');
+                    }
+                } catch (error) {
+                    this.showNotification(`Stop failed: ${error.message}`, 'error');
+                }
+            }
+            
+            async showLogs(appId) {
+                const logsContainer = document.getElementById(`logs-${appId}`);
+                
+                if (logsContainer.style.display === 'block') {
+                    logsContainer.style.display = 'none';
+                    return;
+                }
+                
+                try {
+                    const response = await fetch(`/api/apps/${appId}/logs`);
+                    const data = await response.json();
+                    
+                    logsContainer.innerHTML = data.logs || 'No logs available';
+                    logsContainer.style.display = 'block';
+                    logsContainer.scrollTop = logsContainer.scrollHeight;
+                } catch (error) {
+                    this.showNotification(`Failed to load logs: ${error.message}`, 'error');
+                }
+            }
+            
+            updateCounts() {
+                const installedCount = this.apps.filter(app => app.installed).length;
+                const runningCount = this.apps.filter(app => app.running).length;
+                
+                document.getElementById('installed-count').textContent = installedCount;
+                document.getElementById('running-count').textContent = runningCount;
+            }
+            
+            async updateStatus() {
+                try {
+                    const response = await fetch('/api/status');
+                    const status = await response.json();
+                    // Could update additional status information here
+                } catch (error) {
+                    console.error('Error updating status:', error);
+                }
+            }
+            
+            updateAppStatus(message) {
+                // Update running and installed counts from WebSocket message
+                document.getElementById('running-count').textContent = message.running.length;
+                document.getElementById('installed-count').textContent = message.installed.length;
+            }
+            
+            showNotification(message, type = 'info') {
+                const notification = document.getElementById('notification');
+                const messageEl = document.getElementById('notification-message');
+                
+                messageEl.textContent = message;
+                notification.className = `notification ${type}`;
+                notification.classList.add('show');
+                
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 5000);
+            }
+        }
+        
+        // Initialize the app
+        const pinokio = new PinokioWeb();
+    </script>
+</body>
+</html>

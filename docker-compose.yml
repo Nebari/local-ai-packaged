@@ -34,6 +34,8 @@ volumes:
   openmemory_db:
   praisonai_data:
   praisonai_ui_data:
+  # Pinokio AI App Launcher
+  pinokio_data:
 
 x-n8n: &service-n8n
   image: n8nio/n8n:1.95.1  # Updated from latest for stability
@@ -763,6 +765,27 @@ services:
       - "8501:8501"
     environment:
       - PYTHONUNBUFFERED=1
+    networks:
+      - default
+      - keiken-network
+
+  pinokio:
+    build:
+      context: ./pinokio
+      dockerfile: Dockerfile
+    container_name: pinokio
+    restart: unless-stopped
+    ports:
+      - "8900:8900"  # Web interface
+    environment:
+      - NODE_ENV=production
+      - DISPLAY=:99
+    volumes:
+      - pinokio_data:/root/.pinokio
+      - ./shared/data:/shared_data:rw
+      - ./shared/models:/shared_models:rw
+      - ./shared/outputs:/shared_outputs:rw
+      - /var/run/docker.sock:/var/run/docker.sock:rw  # Docker socket access
     networks:
       - default
       - keiken-network

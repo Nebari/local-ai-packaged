@@ -84,3 +84,8 @@ praisonai.nebarisoftware.com {
 praisonai-ui.nebarisoftware.com {
     reverse_proxy praisonai-ui:8501
 }
+
+# Pinokio - AI App Launcher
+pinokio.nebarisoftware.com {
+    reverse_proxy pinokio:8900
+}
