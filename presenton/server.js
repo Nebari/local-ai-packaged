@@ -81,10 +81,10 @@ function generatePlaceholderImage(slideTitle, slideContent, style = 'professiona
 
     const colors = styleColors[style] || styleColors.professional;
     const title = slideTitle.slice(0, 60);
-    
+
     // Generate concept-specific SVG visualizations
     const conceptSvg = generateConceptVisualization(title, slideContent, colors);
-    
+
     // Convert SVG to data URL
     const svgBase64 = btoa(unescape(encodeURIComponent(conceptSvg)));
     return `data:image/svg+xml;base64,${svgBase64}`;
@@ -94,7 +94,7 @@ function generatePlaceholderImage(slideTitle, slideContent, style = 'professiona
 function generateConceptVisualization(title, content, colors) {
     const contentText = Array.isArray(content) ? content.join(' ').toLowerCase() : content.toLowerCase();
     const titleLower = title.toLowerCase();
-    
+
     // Determine visualization type based on content
     if (titleLower.includes('machine learning') || contentText.includes('algorithm') || contentText.includes('model')) {
         return generateMLVisualization(title, colors);
@@ -526,7 +526,7 @@ async function generatePresentation(topic, style, slides_count = 8) {
                     content: "You are an expert presentation designer. Create engaging, well-structured presentations with clear, concise content."
                 },
                 {
-                    role: "user", 
+                    role: "user",
                     content: prompt
                 }
             ],
@@ -540,7 +540,7 @@ async function generatePresentation(topic, style, slides_count = 8) {
         });
 
         const aiResponse = response.data.choices[0].message.content;
-        
+
         // Try to parse JSON response
         try {
             const presentation = JSON.parse(aiResponse);
@@ -633,7 +633,7 @@ async function createFallbackPresentation(topic, style, slides_count) {
             `Practical application in ${style} context`,
             "Supporting evidence and examples"
         ];
-        
+
         slides.push({
             title: slideTitle,
             content: slideContent,
@@ -650,7 +650,7 @@ async function createFallbackPresentation(topic, style, slides_count) {
             "Questions and discussion",
             "Thank you for your attention"
         ];
-        
+
         slides.push({
             title: "Conclusion",
             content: conclusionContent,

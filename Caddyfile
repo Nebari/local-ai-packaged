@@ -94,3 +94,8 @@ pinokio.nebarisoftware.com {
 presenton.nebarisoftware.com {
     reverse_proxy presenton:3000
 }
+
+# Status Dashboard - KeikenV Services Monitoring
+status.nebarisoftware.com {
+    reverse_proxy status-dashboard:3100
+}

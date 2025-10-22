@@ -506,6 +506,7 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - LITELLM_ENDPOINT=http://litellm:4000
+      - LITELLM_API_KEY=${LITELLM_MASTER_KEY:-sk-1234}
     volumes:
       - presenton_data:/app/data
       - ./shared/data:/shared_data:ro
@@ -683,13 +684,12 @@ services:
     expose:
       - 4000/tcp
     environment:
-      - PORT=4000
-      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY:-sk-1234}
-      - OLLAMA_BASE_URL=http://ollama:11434
+      - LITELLM_LOG=DEBUG
+      - LITELLM_DROP_PARAMS=true
     volumes:
       - litellm_data:/app/data
       - ./shared/data:/shared_data:ro
-    command: ["--host", "0.0.0.0", "--port", "4000", "--model", "ollama_chat/llama3.1:latest", "--api_base", "http://ollama:11434"]
+    command: ["litellm", "--host", "0.0.0.0", "--port", "4000", "--model", "ollama/llama3.1:8b", "--api_base", "http://ollama:11434", "--drop_params"]
     networks:
       - default
       - keiken-network
@@ -800,6 +800,35 @@ services:
       - ./shared/models:/shared_models:rw
       - ./shared/outputs:/shared_outputs:rw
       - /var/run/docker.sock:/var/run/docker.sock:rw  # Docker socket access
+    networks:
+      - default
+      - keiken-network
+
+  # STATUS DASHBOARD - KeikenV Services Monitoring
+  status-dashboard:
+    image: node:18-slim
+    container_name: status-dashboard
+    restart: unless-stopped
+    ports:
+      - "8930:3100"  # External access for development
+    expose:
+      - 3100/tcp
+    environment:
+      - NODE_ENV=production
+      - PORT=3100
+    volumes:
+      - ./status-dashboard:/app
+    working_dir: /app
+    command: >
+      sh -c "
+        if [ ! -f package.json ]; then
+          npm init -y &&
+          npm install express axios cors &&
+          echo 'Status Dashboard service initialized'
+        fi &&
+        npm install &&
+        node server.js
+      "
     networks:
       - default
       - keiken-network

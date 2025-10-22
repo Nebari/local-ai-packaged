@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KeikenV Status Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            padding: 2rem 0;
+            text-align: center;
+            color: white;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .overview-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .overview-card .number {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .overview-card .label {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-healthy {
+            background-color: #10b981;
+        }
+
+        .status-degraded {
+            background-color: #f59e0b;
+        }
+
+        .status-unhealthy {
+            background-color: #ef4444;
+        }
+
+        .status-unknown {
+            background-color: #6b7280;
+        }
+
+        .category {
+            background: white;
+            border-radius: 20px;
+            margin-bottom: 2rem;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .category-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem 2rem;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 0;
+        }
+
+        .service-card {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid #f0f0f0;
+            border-right: 1px solid #f0f0f0;
+            transition: all 0.3s ease;
+        }
+
+        .service-card:hover {
+            background: #f8f9fa;
+            transform: translateY(-2px);
+        }
+
+        .service-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .service-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .service-description {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .service-metrics {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        .metric {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .status-badge {
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-healthy {
+            background: #ecfdf5;
+            color: #065f46;
+        }
+
+        .badge-unhealthy {
+            background: #fef2f2;
+            color: #991b1b;
+        }
+
+        .badge-unknown {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .external-link {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            display: inline-block;
+        }
+
+        .external-link:hover {
+            text-decoration: underline;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: white;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .last-updated {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.8);
+            margin-top: 2rem;
+            font-size: 0.9rem;
+        }
+
+        .error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #dc2626;
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .services-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>🚀 KeikenV</h1>
+        <p>Autonomous AI Agent Platform - Service Status</p>
+    </div>
+
+    <div class="container">
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Loading service status...</p>
+        </div>
+
+        <div id="dashboard" style="display: none;">
+            <div class="overview">
+                <div class="overview-card">
+                    <div class="number" id="total-services">-</div>
+                    <div class="label">Total Services</div>
+                </div>
+                <div class="overview-card">
+                    <div class="number" id="healthy-services" style="color: #10b981;">-</div>
+                    <div class="label">Healthy Services</div>
+                </div>
+                <div class="overview-card">
+                    <div class="number" id="unhealthy-services" style="color: #ef4444;">-</div>
+                    <div class="label">Unhealthy Services</div>
+                </div>
+                <div class="overview-card">
+                    <div class="number" id="system-status">-</div>
+                    <div class="label">System Status</div>
+                </div>
+            </div>
+
+            <div id="categories"></div>
+
+            <div class="last-updated">
+                Last updated: <span id="last-updated">-</span>
+            </div>
+        </div>
+
+        <div id="error" class="error" style="display: none;">
+            Failed to load service status. Please check your connection.
+        </div>
+    </div>
+
+    <script>
+        let statusData = null;
+
+        async function loadStatus() {
+            try {
+                const response = await fetch('/api/status/cached');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch status');
+                }
+
+                statusData = await response.json();
+                renderDashboard();
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+                document.getElementById('error').style.display = 'none';
+
+            } catch (error) {
+                console.error('Error loading status:', error);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+            }
+        }
+
+        function renderDashboard() {
+            if (!statusData) return;
+
+            const { overall, categories } = statusData;
+
+            // Update overview
+            document.getElementById('total-services').textContent = overall.total;
+            document.getElementById('healthy-services').textContent = overall.healthy;
+            document.getElementById('unhealthy-services').textContent = overall.unhealthy;
+            document.getElementById('system-status').textContent = overall.status.toUpperCase();
+            document.getElementById('last-updated').textContent = new Date(overall.lastUpdated).toLocaleString();
+
+            // Set system status color
+            const statusElement = document.getElementById('system-status');
+            const statusColors = {
+                healthy: '#10b981',
+                degraded: '#f59e0b',
+                unhealthy: '#ef4444'
+            };
+            statusElement.style.color = statusColors[overall.status] || '#6b7280';
+
+            // Render categories
+            const categoriesContainer = document.getElementById('categories');
+            categoriesContainer.innerHTML = '';
+
+            Object.entries(categories).forEach(([categoryName, services]) => {
+                const categoryElement = createCategoryElement(categoryName, services);
+                categoriesContainer.appendChild(categoryElement);
+            });
+        }
+
+        function createCategoryElement(categoryName, services) {
+            const category = document.createElement('div');
+            category.className = 'category';
+
+            const header = document.createElement('div');
+            header.className = 'category-header';
+            header.textContent = categoryName;
+
+            const servicesGrid = document.createElement('div');
+            servicesGrid.className = 'services-grid';
+
+            services.forEach(service => {
+                const serviceCard = createServiceCard(service);
+                servicesGrid.appendChild(serviceCard);
+            });
+
+            category.appendChild(header);
+            category.appendChild(servicesGrid);
+            return category;
+        }
+
+        function createServiceCard(service) {
+            const card = document.createElement('div');
+            card.className = 'service-card';
+
+            const statusClass = `status-${service.status}`;
+            const badgeClass = `badge-${service.status}`;
+
+            card.innerHTML = `
+                <div class="service-header">
+                    <div class="service-name">
+                        <span class="status-indicator ${statusClass}"></span>
+                        ${service.name}
+                    </div>
+                    <div class="status-badge ${badgeClass}">
+                        ${service.status}
+                    </div>
+                </div>
+                <div class="service-description">
+                    ${service.description}
+                </div>
+                <div class="service-metrics">
+                    ${service.statusCode ? `<div class="metric">📊 ${service.statusCode}</div>` : ''}
+                    ${service.responseTime ? `<div class="metric">⚡ ${service.responseTime}ms</div>` : ''}
+                    <div class="metric">🔗 ${service.url}</div>
+                </div>
+                ${service.externalUrl ? `<a href="${service.externalUrl}" target="_blank" class="external-link">🌐 Open Service</a>` : ''}
+                ${service.error ? `<div style="color: #dc2626; font-size: 0.8rem; margin-top: 0.5rem;">❌ ${service.error}</div>` : ''}
+            `;
+
+            return card;
+        }
+
+        // Auto-refresh every 30 seconds
+        function startAutoRefresh() {
+            loadStatus();
+            setInterval(loadStatus, 30000);
+        }
+
+        // Initialize
+        startAutoRefresh();
+
+        // Manual refresh on focus
+        window.addEventListener('focus', loadStatus);
+    </script>
+</body>
+
+</html>
