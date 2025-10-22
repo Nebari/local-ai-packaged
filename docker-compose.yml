@@ -163,6 +163,12 @@ services:
     ports:
       - 80:80/tcp
       - 443:443/tcp
+      - 8010:8010/tcp  # LiteLLM via Caddy proxy
+      - 8011:8011/tcp  # MLflow via Caddy proxy  
+      - 8012:8012/tcp  # Presenton via Caddy proxy
+    networks:
+      - default
+      - keiken-network  # Connect to Keiken services
     expose:
       - 2019/tcp
       - 443/tcp
@@ -182,6 +188,10 @@ services:
       - SEARXNG_HOSTNAME=${SEARXNG_HOSTNAME:-":8006"}
       - LANGFUSE_HOSTNAME=${LANGFUSE_HOSTNAME:-":8007"}
       - NEO4J_HOSTNAME=${NEO4J_HOSTNAME:-":8008"}
+      # KeikenV Service Extensions
+      - LITELLM_HOSTNAME=${LITELLM_HOSTNAME:-":8010"}
+      - MLFLOW_HOSTNAME=${MLFLOW_HOSTNAME:-":8011"}
+      - PRESENTON_HOSTNAME=${PRESENTON_HOSTNAME:-":8012"}
       - LETSENCRYPT_EMAIL=${LETSENCRYPT_EMAIL:-internal}
     cap_drop:
       - ALL
@@ -576,3 +586,9 @@ services:
       - litellm_data:/app/data
       - ./shared/data:/shared_data:ro
     command: ["--host", "0.0.0.0", "--port", "4000", "--model", "ollama_chat/llama3.1:latest", "--api_base", "http://ollama:11434"]
+
+# Network configuration
+networks:
+  keiken-network:
+    external: true
+    name: keiken-network
