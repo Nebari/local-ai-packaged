@@ -28,6 +28,10 @@ volumes:
   # Perplexica AI Search Engine
   perplexica_data:
   perplexica_uploads:
+  # Mem0 AI Memory Layer
+  mem0_history:
+  openmemory_data:
+  openmemory_db:
 
 x-n8n: &service-n8n
   image: n8nio/n8n:1.95.1  # Updated from latest for stability
@@ -689,6 +693,42 @@ services:
       - NODE_ENV=production
     depends_on:
       - searxng
+
+  # MEM0 - Simple AI Memory Layer 
+  mem0-server:
+    build:
+      context: ./mem0
+      dockerfile: Dockerfile
+    container_name: mem0-server
+    restart: unless-stopped
+    ports:
+      - "8764:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - mem0_history:/app/data
+      - ./shared/data:/shared_data:rw
+    networks:
+      - default
+      - keiken-network
+
+  # Simple MCP Memory Server - Model Context Protocol
+  openmemory-mcp:
+    build:
+      context: ./openmemory
+      dockerfile: Dockerfile
+    container_name: openmemory-mcp
+    restart: unless-stopped
+    ports:
+      - "8765:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - openmemory_data:/app/data
+      - ./shared/data:/shared_data:rw
+    networks:
+      - default
+      - keiken-network
 
 # Network configuration
 networks:

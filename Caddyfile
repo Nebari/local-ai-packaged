@@ -66,3 +66,13 @@ automatic1111.nebarisoftware.com {
 perplexica.nebarisoftware.com {
     reverse_proxy perplexica:3000
 }
+
+# Mem0 - AI Memory Layer
+mem0.nebarisoftware.com {
+    reverse_proxy mem0-server:8000
+}
+
+# OpenMemory MCP - Model Context Protocol Memory
+openmemory.nebarisoftware.com {
+    reverse_proxy openmemory-mcp:8765
+}
