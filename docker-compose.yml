@@ -493,19 +493,33 @@ services:
   # KEIKEN AI SERVICES EXTENSION  
   # =============================
 
-  # PRESENTON - Presentation Service
+  # PRESENTON - AI Presentation Service
   presenton:
-    image: nginx:alpine
+    image: node:18-slim
     container_name: presenton
     restart: unless-stopped
-    expose:
-      - 3000/tcp
+    ports:
+      - "8920:3000"
     environment:
       - NODE_ENV=production
       - PORT=3000
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - LITELLM_ENDPOINT=http://litellm:4000
     volumes:
       - presenton_data:/app/data
       - ./shared/data:/shared_data:ro
+      - ./presenton:/app
+    working_dir: /app
+    command: >
+      sh -c "
+        if [ ! -f package.json ]; then
+          npm init -y &&
+          npm install express cors multer axios marked highlight.js &&
+          echo 'AI Presentation service initialized'
+        fi &&
+        node server.js
+      "
     networks:
       - default
       - keiken-network

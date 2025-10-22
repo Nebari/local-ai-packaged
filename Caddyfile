@@ -89,3 +89,8 @@ praisonai-ui.nebarisoftware.com {
 pinokio.nebarisoftware.com {
     reverse_proxy pinokio:8900
 }
+
+# PresEnton - AI Presentation Generator
+presenton.nebarisoftware.com {
+    reverse_proxy presenton:3000
+}
