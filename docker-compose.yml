@@ -520,7 +520,7 @@ services:
 
   # AUTOMATIC1111 - Popular SD WebUI
   x-automatic1111: &service-automatic1111
-    image: continuumio/miniconda3:latest
+    image: pytorch/pytorch:2.1.0-cuda12.1-cudnn8-devel
     container_name: automatic1111
     restart: unless-stopped
     ports:
@@ -528,28 +528,29 @@ services:
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - PYTHONUNBUFFERED=1
     volumes:
       - automatic1111_data:/workspace
       - ./shared/models:/shared_models:rw
       - ./shared/data:/shared_data:rw
       - ./shared/outputs:/shared_outputs:rw
-      - ./shared/models/checkpoints:/workspace/models/Stable-diffusion:rw
-      - ./shared/models/lora:/workspace/models/Lora:rw
-      - ./shared/models/vae:/workspace/models/VAE:rw
-      - ./shared/models/controlnet:/workspace/models/ControlNet:rw
-      - ./shared/models/embeddings:/workspace/embeddings:rw
-      - ./shared/models/upscale:/workspace/models/ESRGAN:rw
-      - ./shared/outputs/automatic1111:/workspace/outputs:rw
+      - ./shared/models/checkpoints:/workspace/stable-diffusion-webui/models/Stable-diffusion:rw
+      - ./shared/models/lora:/workspace/stable-diffusion-webui/models/Lora:rw
+      - ./shared/models/vae:/workspace/stable-diffusion-webui/models/VAE:rw
+      - ./shared/models/controlnet:/workspace/stable-diffusion-webui/models/ControlNet:rw
+      - ./shared/models/embeddings:/workspace/stable-diffusion-webui/embeddings:rw
+      - ./shared/models/upscale:/workspace/stable-diffusion-webui/models/ESRGAN:rw
+      - ./shared/outputs/automatic1111:/workspace/stable-diffusion-webui/outputs:rw
+    working_dir: /workspace
     command: >
       bash -c "
-      apt-get update && apt-get install -y git wget && 
-      cd /workspace && 
+      apt-get update && apt-get install -y git wget curl &&
       if [ ! -d 'stable-diffusion-webui' ]; then 
         git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui.git
       fi &&
       cd stable-diffusion-webui &&
-      python -m pip install --upgrade pip &&
-      python launch.py --listen --port 7860 --allow-code --medvram --xformers --enable-insecure-extension-access --api --skip-torch-cuda-test
+      pip install xformers --index-url https://download.pytorch.org/whl/cu121 &&
+      python launch.py --listen --port 7860 --medvram --xformers --enable-insecure-extension-access --api --allow-code --skip-torch-cuda-test
       "
 
   automatic1111-cpu:
