@@ -96,6 +96,14 @@ const services = [
         description: 'Universal LLM API Proxy'
     },
     {
+        name: 'ComfyUI',
+        category: 'AI Services',
+        url: 'http://comfyui:8188',
+        healthEndpoint: 'http://comfyui:8188',
+        externalUrl: 'https://comfyui.nebarisoftware.com',
+        description: 'Node-based AI Workflows'
+    },
+    {
         name: 'Automatic1111',
         category: 'AI Services',
         url: 'http://automatic1111:7860',
@@ -120,20 +128,52 @@ const services = [
         description: 'AI Memory Layer'
     },
     {
-        name: 'PraisonAI Teams',
+        name: 'Perplexica',
         category: 'AI Services',
-        url: 'http://praisonai-teams:8000',
-        healthEndpoint: 'http://praisonai-teams:8000',
-        externalUrl: 'https://praisonai.nebarisoftware.com',
-        description: 'Multi-Agent Teams'
+        url: 'http://perplexica:3000',
+        healthEndpoint: 'http://perplexica:3000',
+        externalUrl: 'https://perplexica.nebarisoftware.com',
+        description: 'AI-Powered Search Engine'
     },
     {
-        name: 'PraisonAI UI',
+        name: 'Keiken Teams API',
         category: 'AI Services',
-        url: 'http://praisonai-ui:8501',
-        healthEndpoint: 'http://praisonai-ui:8501',
-        externalUrl: 'https://praisonai-ui.nebarisoftware.com',
-        description: 'Agent UI Interface'
+        url: 'http://keiken-teams-api:8000',
+        healthEndpoint: 'http://keiken-teams-api:8000',
+        externalUrl: 'https://api.keikendemo.nebarisoftware.com',
+        description: 'Multi-Agent Teams API'
+    },
+    {
+        name: 'Keiken Main UI',
+        category: 'AI Services',
+        url: 'http://keiken-main-ui:8501',
+        healthEndpoint: 'http://keiken-main-ui:8501',
+        externalUrl: 'https://keikendemo.nebarisoftware.com',
+        description: 'Main Keiken Interface'
+    },
+    {
+        name: 'Keiken UI Interface',
+        category: 'AI Services',
+        url: 'http://keiken-ui-interface:8082',
+        healthEndpoint: 'http://keiken-ui-interface:8082',
+        externalUrl: 'https://ui.keikendemo.nebarisoftware.com',
+        description: 'Collaborative Multi-Agent UI'
+    },
+    {
+        name: 'Keiken Code Interface',
+        category: 'AI Services',
+        url: 'http://keiken-code-interface:8501',
+        healthEndpoint: 'http://keiken-code-interface:8501',
+        externalUrl: 'https://code.keikendemo.nebarisoftware.com',
+        description: 'Codebase Analysis Interface'
+    },
+    {
+        name: 'Keiken Chat Interface',
+        category: 'AI Services',
+        url: 'http://keiken-chat-interface:8503',
+        healthEndpoint: 'http://keiken-chat-interface:8503',
+        externalUrl: 'https://chat.keikendemo.nebarisoftware.com',
+        description: 'Single-Agent Chat Interface'
     },
     {
         name: 'OpenMemory MCP',

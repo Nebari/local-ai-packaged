@@ -2,7 +2,7 @@
 
 ## Overview
 
-The KeikenV Status Dashboard provides real-time monitoring of all services in your autonomous AI agent platform. It continuously monitors 24+ services across multiple categories and provides health status, response times, and connectivity information.
+The KeikenV Status Dashboard provides real-time monitoring of all services in your autonomous AI agent platform. It continuously monitors 29 services across multiple categories and provides health status, response times, and connectivity information.
 
 ## Access Points
 
@@ -33,15 +33,20 @@ The KeikenV Status Dashboard provides real-time monitoring of all services in yo
 - PostgreSQL - Primary Database
 - Flowise - AI Workflow Builder
 
-#### AI Services (10 services)
+#### AI Services (15 services)
 - PresEnton - AI Presentation Generator
 - MLflow - ML Experiment Tracking
 - LiteLLM - Universal LLM API Proxy
+- ComfyUI - Node-based AI Workflows
 - Automatic1111 - Stable Diffusion WebUI
 - InvokeAI - AI Image Generation
 - Mem0 - AI Memory Layer
-- PraisonAI Teams - Multi-Agent Teams
-- PraisonAI UI - Agent UI Interface
+- Perplexica - AI-Powered Search Engine
+- Keiken Teams API - Multi-Agent Teams API
+- Keiken Main UI - Main Keiken Interface
+- Keiken UI Interface - Collaborative Multi-Agent UI
+- Keiken Code Interface - Codebase Analysis Interface
+- Keiken Chat Interface - Single-Agent Chat Interface
 - OpenMemory MCP - Memory Context Protocol
 - Pinokio - AI App Launcher
 
@@ -78,7 +83,7 @@ GET /api/health          # Dashboard health
     "healthy": 22,
     "unhealthy": 0,
     "unknown": 2,
-    "total": 24,
+    "total": 29,
     "checkDuration": 1205,
     "lastUpdated": "2025-10-22T23:16:47.599Z"
   },
