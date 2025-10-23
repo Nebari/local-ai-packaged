@@ -355,6 +355,140 @@ app.get('/api/health', (req, res) => {
     });
 });
 
+// Service management endpoints
+app.post('/api/services/:action', async (req, res) => {
+    const { action } = req.params;
+    const { services: targetServices } = req.body;
+
+    // Security check - only allow specific actions
+    const allowedActions = ['start', 'stop', 'restart'];
+    if (!allowedActions.includes(action)) {
+        return res.status(400).json({ error: 'Invalid action' });
+    }
+
+    try {
+        const { spawn } = require('child_process');
+        let command, args;
+
+        if (targetServices && Array.isArray(targetServices)) {
+            // Specific services
+            command = 'docker-compose';
+            args = ['--profile', 'gpu-nvidia', action, ...targetServices];
+        } else {
+            // All services
+            switch (action) {
+                case 'start':
+                    command = 'docker-compose';
+                    args = ['--profile', 'gpu-nvidia', 'up', '-d'];
+                    break;
+                case 'stop':
+                    command = 'docker-compose';
+                    args = ['--profile', 'gpu-nvidia', 'down'];
+                    break;
+                case 'restart':
+                    command = 'docker-compose';
+                    args = ['--profile', 'gpu-nvidia', 'restart'];
+                    break;
+            }
+        }
+
+        const process = spawn(command, args, {
+            cwd: '/host-docker-compose',
+            stdio: 'pipe'
+        });
+
+        let output = '';
+        process.stdout.on('data', (data) => {
+            output += data.toString();
+        });
+
+        process.stderr.on('data', (data) => {
+            output += data.toString();
+        });
+
+        process.on('close', (code) => {
+            if (code === 0) {
+                res.json({
+                    success: true,
+                    message: `Successfully executed ${action}`,
+                    output: output
+                });
+            } else {
+                res.status(500).json({
+                    success: false,
+                    message: `Failed to ${action} services`,
+                    output: output
+                });
+            }
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+// Individual service management
+app.post('/api/service/:serviceName/:action', async (req, res) => {
+    const { serviceName, action } = req.params;
+
+    // Security check
+    const allowedActions = ['start', 'stop', 'restart'];
+    if (!allowedActions.includes(action)) {
+        return res.status(400).json({ error: 'Invalid action' });
+    }
+
+    // Find service in our list to validate it exists
+    const service = services.find(s => s.name.toLowerCase().replace(/\s+/g, '-') === serviceName);
+    if (!service) {
+        return res.status(404).json({ error: 'Service not found' });
+    }
+
+    try {
+        const { spawn } = require('child_process');
+
+        // Get the container name from the service URL
+        const containerName = service.url.split('://')[1].split(':')[0];
+
+        const process = spawn('docker', [action, containerName], {
+            stdio: 'pipe'
+        });
+
+        let output = '';
+        process.stdout.on('data', (data) => {
+            output += data.toString();
+        });
+
+        process.stderr.on('data', (data) => {
+            output += data.toString();
+        });
+
+        process.on('close', (code) => {
+            if (code === 0) {
+                res.json({
+                    success: true,
+                    message: `Successfully ${action}ed ${service.name}`,
+                    output: output
+                });
+            } else {
+                res.status(500).json({
+                    success: false,
+                    message: `Failed to ${action} ${service.name}`,
+                    output: output
+                });
+            }
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
 // Periodic status updates (every 30 seconds)
 let cachedStatus = null;
 async function updateStatusCache() {

@@ -231,6 +231,116 @@
             font-size: 0.9rem;
         }
 
+        .management-controls {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .management-title {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            padding: 0.8rem 2rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 120px;
+        }
+
+        .btn-start {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-start:hover {
+            background: #059669;
+            transform: translateY(-2px);
+        }
+
+        .btn-stop {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-stop:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+        }
+
+        .btn-restart {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .btn-restart:hover {
+            background: #d97706;
+            transform: translateY(-2px);
+        }
+
+        .btn-disabled {
+            background: #6b7280;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .operation-status {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-top: 1rem;
+            color: white;
+            display: none;
+        }
+
+        .operation-success {
+            background: rgba(16, 185, 129, 0.2);
+            border-left: 4px solid #10b981;
+        }
+
+        .operation-error {
+            background: rgba(239, 68, 68, 0.2);
+            border-left: 4px solid #ef4444;
+        }
+
+        .service-controls {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .service-btn {
+            padding: 0.3rem 0.8rem;
+            border: none;
+            border-radius: 5px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .service-btn:hover {
+            transform: translateY(-1px);
+        }
+
         .error {
             background: rgba(239, 68, 68, 0.1);
             border: 1px solid rgba(239, 68, 68, 0.3);
@@ -264,6 +374,22 @@
     </div>
 
     <div class="container">
+        <div class="management-controls">
+            <div class="management-title">Service Management</div>
+            <div class="control-buttons">
+                <button class="control-btn btn-start" onclick="performBulkAction('start')">
+                    Start All Services
+                </button>
+                <button class="control-btn btn-stop" onclick="performBulkAction('stop')">
+                    Stop All Services
+                </button>
+                <button class="control-btn btn-restart" onclick="performBulkAction('restart')">
+                    Restart All Services
+                </button>
+            </div>
+            <div id="operationStatus" class="operation-status"></div>
+        </div>
+
         <div id="loading" class="loading">
             <div class="spinner"></div>
             <p>Loading service status...</p>
@@ -404,6 +530,17 @@
                 </div>
                 ${service.externalUrl ? `<a href="${service.externalUrl}" target="_blank" class="external-link">🌐 Open Service</a>` : ''}
                 ${service.error ? `<div style="color: #dc2626; font-size: 0.8rem; margin-top: 0.5rem;">❌ ${service.error}</div>` : ''}
+                <div class="service-controls">
+                    <button class="service-btn btn-start" onclick="performServiceAction('${service.name}', 'start')" title="Start ${service.name}">
+                        ▶️ Start
+                    </button>
+                    <button class="service-btn btn-stop" onclick="performServiceAction('${service.name}', 'stop')" title="Stop ${service.name}">
+                        ⏹️ Stop
+                    </button>
+                    <button class="service-btn btn-restart" onclick="performServiceAction('${service.name}', 'restart')" title="Restart ${service.name}">
+                        🔄 Restart
+                    </button>
+                </div>
             `;
 
             return card;
@@ -413,6 +550,99 @@
         function startAutoRefresh() {
             loadStatus();
             setInterval(loadStatus, 30000);
+        }
+
+        // Service Management Functions
+        async function performBulkAction(action) {
+            const operationStatus = document.getElementById('operationStatus');
+            const buttons = document.querySelectorAll('.control-btn');
+
+            // Disable buttons during operation
+            buttons.forEach(btn => {
+                btn.classList.add('btn-disabled');
+                btn.disabled = true;
+            });
+
+            operationStatus.style.display = 'block';
+            operationStatus.className = 'operation-status';
+            operationStatus.innerHTML = `<strong>Operation in progress...</strong><br>Executing ${action} on all services. This may take a few minutes.`;
+
+            try {
+                const response = await fetch(`/api/services/${action}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    operationStatus.className = 'operation-status operation-success';
+                    operationStatus.innerHTML = `<strong>✅ Success!</strong><br>${result.message}`;
+
+                    // Refresh status after a brief delay
+                    setTimeout(() => {
+                        loadStatus();
+                    }, 3000);
+                } else {
+                    operationStatus.className = 'operation-status operation-error';
+                    operationStatus.innerHTML = `<strong>❌ Error:</strong><br>${result.message}`;
+                }
+            } catch (error) {
+                operationStatus.className = 'operation-status operation-error';
+                operationStatus.innerHTML = `<strong>❌ Error:</strong><br>Failed to ${action} services: ${error.message}`;
+            } finally {
+                // Re-enable buttons
+                setTimeout(() => {
+                    buttons.forEach(btn => {
+                        btn.classList.remove('btn-disabled');
+                        btn.disabled = false;
+                    });
+                }, 2000);
+            }
+        }
+
+        async function performServiceAction(serviceName, action) {
+            const button = event.target;
+            const originalText = button.innerHTML;
+
+            button.disabled = true;
+            button.innerHTML = '⏳ Working...';
+
+            try {
+                const response = await fetch(`/api/service/${serviceName}/${action}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    button.innerHTML = '✅ Done';
+                    setTimeout(() => {
+                        button.innerHTML = originalText;
+                        button.disabled = false;
+                        loadStatus(); // Refresh status
+                    }, 2000);
+                } else {
+                    button.innerHTML = '❌ Failed';
+                    setTimeout(() => {
+                        button.innerHTML = originalText;
+                        button.disabled = false;
+                    }, 3000);
+                    console.error(`Failed to ${action} ${serviceName}:`, result.message);
+                }
+            } catch (error) {
+                button.innerHTML = '❌ Error';
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.disabled = false;
+                }, 3000);
+                console.error(`Error performing ${action} on ${serviceName}:`, error);
+            }
         }
 
         // Initialize

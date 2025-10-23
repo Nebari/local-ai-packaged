@@ -860,6 +860,7 @@ services:
       - PORT=3100
     volumes:
       - ./status-dashboard:/app
+      - /var/run/docker.sock:/var/run/docker.sock
     working_dir: /app
     command: >
       sh -c "
