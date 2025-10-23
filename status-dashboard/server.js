@@ -191,6 +191,14 @@ const services = [
         externalUrl: 'https://pinokio.nebarisoftware.com',
         description: 'AI App Launcher'
     },
+    {
+        name: 'MCPO',
+        category: 'AI Services',
+        url: 'http://mcpo:8000',
+        healthEndpoint: 'http://mcpo:8000/health',
+        externalUrl: 'http://localhost:8940',
+        description: 'MCP-to-OpenAPI Proxy'
+    },
 
     // Supporting Services
     {

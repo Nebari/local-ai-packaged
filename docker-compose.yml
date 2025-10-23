@@ -36,6 +36,8 @@ volumes:
   praisonai_ui_data:
   # Pinokio AI App Launcher
   pinokio_data:
+  # MCPO MCP-to-OpenAPI Proxy
+  mcpo_data:
 
 x-n8n: &service-n8n
   image: n8nio/n8n:1.95.1  # Updated from latest for stability
@@ -875,6 +877,33 @@ services:
     networks:
       - default
       - keiken-network
+
+  # MCPO - MCP-to-OpenAPI Proxy for Model Context Protocol servers
+  mcpo:
+    image: ghcr.io/open-webui/mcpo:main
+    container_name: mcpo
+    restart: unless-stopped
+    ports:
+      - "8940:8000"  # External access for MCPO API
+    expose:
+      - 8000/tcp
+    environment:
+      - MCPO_API_KEY=keiken-mcpo-secret-2024  # API key for securing access
+      - MCPO_PORT=8000
+      - MCPO_HOST=0.0.0.0
+    volumes:
+      - mcpo_data:/app/data
+      - ./mcpo:/app/config  # Configuration directory
+    networks:
+      - default
+      - keiken-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    command: ["--config", "/app/config/mcpo.json", "--hot-reload", "--port", "8000", "--api-key", "keiken-mcpo-secret-2024"]
 
 # Network configuration
 networks:

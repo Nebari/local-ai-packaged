@@ -116,3 +116,8 @@ presenton.nebarisoftware.com {
 status.nebarisoftware.com {
     reverse_proxy status-dashboard:3100
 }
+
+# MCPO - MCP-to-OpenAPI Proxy
+mcpo.nebarisoftware.com {
+    reverse_proxy mcpo:8000
+}
