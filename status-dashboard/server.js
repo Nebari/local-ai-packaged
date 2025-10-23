@@ -293,9 +293,96 @@ async function checkServiceHealth(service) {
     }
 }
 
+// Check MCP server health (for HTTP/SSE types)
+async function checkMcpServerHealth(serverName, serverConfig) {
+    try {
+        // Only check health for HTTP/SSE servers
+        if (serverConfig.type === 'streamable-http' || serverConfig.type === 'sse') {
+            const startTime = Date.now();
+            const response = await axios.get(serverConfig.url, {
+                timeout: 3000,
+                headers: serverConfig.headers || {},
+                validateStatus: function (status) {
+                    return status < 500;
+                }
+            });
+            const responseTime = Date.now() - startTime;
+
+            return {
+                name: serverName,
+                status: 'healthy',
+                statusCode: response.status,
+                responseTime: responseTime,
+                error: null,
+                type: 'mcp-server',
+                category: 'MCP Servers',
+                url: serverConfig.url,
+                description: serverConfig.description || `MCP Server: ${serverName}`,
+                lastChecked: new Date().toISOString()
+            };
+        } else {
+            // For stdio servers, assume healthy if configured
+            return {
+                name: serverName,
+                status: 'healthy',
+                statusCode: 'N/A',
+                responseTime: 0,
+                error: 'STDIO server - health assumed',
+                type: 'mcp-server',
+                category: 'MCP Servers',
+                url: null,
+                description: serverConfig.description || `MCP Server: ${serverName}`,
+                lastChecked: new Date().toISOString()
+            };
+        }
+    } catch (error) {
+        return {
+            name: serverName,
+            status: 'unhealthy',
+            statusCode: error.response?.status || 0,
+            responseTime: 0,
+            error: error.message,
+            type: 'mcp-server',
+            category: 'MCP Servers',
+            url: serverConfig.url || null,
+            description: serverConfig.description || `MCP Server: ${serverName}`,
+            lastChecked: new Date().toISOString()
+        };
+    }
+}
+
+// Get MCP servers from MCPO configuration
+async function getMcpServers() {
+    try {
+        const configPath = findMcpoConfigPath();
+        if (!fs.existsSync(configPath)) {
+            return [];
+        }
+
+        const configContent = fs.readFileSync(configPath, 'utf8');
+        const config = JSON.parse(configContent);
+
+        if (!config.mcpServers) {
+            return [];
+        }
+
+        // Check health for each MCP server
+        const mcpPromises = Object.entries(config.mcpServers).map(async ([name, serverConfig]) => {
+            return await checkMcpServerHealth(name, serverConfig);
+        });
+
+        return await Promise.all(mcpPromises);
+    } catch (error) {
+        console.error('Failed to get MCP servers:', error.message);
+        return [];
+    }
+}
+
 // Get overall system status
 async function getSystemStatus() {
     const startTime = Date.now();
+
+    // Check regular services
     const servicePromises = services.map(async (service) => {
         const health = await checkServiceHealth(service);
         return {
@@ -305,14 +392,23 @@ async function getSystemStatus() {
         };
     });
 
-    const serviceStatuses = await Promise.all(servicePromises);
+    // Check MCP servers
+    const mcpServersPromise = getMcpServers();
+
+    const [serviceStatuses, mcpServers] = await Promise.all([
+        Promise.all(servicePromises),
+        mcpServersPromise
+    ]);
+
+    // Combine all services
+    const allServices = [...serviceStatuses, ...mcpServers];
     const totalTime = Date.now() - startTime;
 
-    const healthy = serviceStatuses.filter(s => s.status === 'healthy').length;
-    const unhealthy = serviceStatuses.filter(s => s.status === 'unhealthy').length;
-    const unknown = serviceStatuses.filter(s => s.status === 'unknown').length;
+    const healthy = allServices.filter(s => s.status === 'healthy').length;
+    const unhealthy = allServices.filter(s => s.status === 'unhealthy').length;
+    const unknown = allServices.filter(s => s.status === 'unknown').length;
 
-    const overallStatus = unhealthy === 0 ? 'healthy' : unhealthy < serviceStatuses.length / 2 ? 'degraded' : 'unhealthy';
+    const overallStatus = unhealthy === 0 ? 'healthy' : unhealthy < allServices.length / 2 ? 'degraded' : 'unhealthy';
 
     return {
         overall: {
@@ -320,12 +416,16 @@ async function getSystemStatus() {
             healthy: healthy,
             unhealthy: unhealthy,
             unknown: unknown,
-            total: serviceStatuses.length,
+            total: allServices.length,
+            regularServices: serviceStatuses.length,
+            mcpServers: mcpServers.length,
             checkDuration: totalTime,
             lastUpdated: new Date().toISOString()
         },
         services: serviceStatuses,
-        categories: groupServicesByCategory(serviceStatuses)
+        mcpServers: mcpServers,
+        allServices: allServices,
+        categories: groupServicesByCategory(allServices)
     };
 }
 
@@ -492,6 +592,212 @@ app.post('/api/service/:serviceName/:action', async (req, res) => {
     } catch (error) {
         res.status(500).json({
             success: false,
+            message: error.message
+        });
+    }
+});
+
+// MCP Configuration Management
+const fs = require('fs');
+// Candidate locations where mcpo.json might be mounted inside the container.
+// Compose mounts may vary; check multiple sensible paths and pick the first that exists.
+const mcpoConfigCandidates = [
+    '/app/mcpo-config/mcpo.json', // explicit mount used by docker-compose for status-dashboard
+    '/app/config/mcpo.json',      // same location mcpo container uses
+    '/mcpo/mcpo.json',            // fallback common mount
+    // as a last resort, look for a mcpo directory next to the app code
+    require('path').join(__dirname, '..', 'mcpo', 'mcpo.json')
+];
+
+function findMcpoConfigPath() {
+    for (const p of mcpoConfigCandidates) {
+        try {
+            if (fs.existsSync(p)) return p;
+        } catch (e) {
+            // ignore permission errors here and continue
+        }
+    }
+    // If none exist, return the primary candidate where we'll create the file when needed
+    return mcpoConfigCandidates[0];
+}
+
+function ensureMcpoConfigDirExists(configPath) {
+    try {
+        const dir = require('path').dirname(configPath);
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+    } catch (e) {
+        // ignore here; callers will handle errors
+    }
+}
+
+// Get current MCPO configuration
+app.get('/api/mcpo/config', (req, res) => {
+    try {
+        const configPath = findMcpoConfigPath();
+        if (fs.existsSync(configPath)) {
+            const configContent = fs.readFileSync(configPath, 'utf8');
+            const config = JSON.parse(configContent);
+            res.json(config);
+        } else {
+            res.status(404).json({ error: 'MCPO configuration file not found', pathTried: configPath });
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to read MCPO configuration', message: error.message });
+    }
+});
+
+// Add new MCP server to configuration
+app.post('/api/mcpo/servers', (req, res) => {
+    try {
+        const { serverName, serverConfig } = req.body;
+
+        // Validate input
+        if (!serverName || !serverConfig) {
+            return res.status(400).json({ error: 'Server name and configuration are required' });
+        }
+
+        // Validate server name (alphanumeric, hyphens, underscores only)
+        if (!/^[a-zA-Z0-9_-]+$/.test(serverName)) {
+            return res.status(400).json({ error: 'Server name must contain only letters, numbers, hyphens, and underscores' });
+        }
+
+        // Read current configuration (look for mcpo.json in common locations)
+        const configPath = findMcpoConfigPath();
+        let config = { mcpServers: {} };
+        if (fs.existsSync(configPath)) {
+            const configContent = fs.readFileSync(configPath, 'utf8');
+            config = JSON.parse(configContent);
+        }
+
+        // Check if server already exists
+        if (config.mcpServers && config.mcpServers[serverName]) {
+            return res.status(409).json({ error: `Server "${serverName}" already exists` });
+        }
+
+        // Add new server
+        if (!config.mcpServers) {
+            config.mcpServers = {};
+        }
+        config.mcpServers[serverName] = serverConfig;
+
+        // Write updated configuration. Ensure directory exists for primary candidate when creating new file.
+        ensureMcpoConfigDirExists(configPath);
+        const updatedConfig = JSON.stringify(config, null, 2);
+        fs.writeFileSync(configPath, updatedConfig, 'utf8');
+
+        res.json({
+            success: true,
+            message: `MCP server "${serverName}" added successfully`,
+            config: config
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: 'Failed to add MCP server',
+            message: error.message
+        });
+    }
+});
+
+// Remove MCP server from configuration
+app.delete('/api/mcpo/servers/:serverName', (req, res) => {
+    try {
+        const { serverName } = req.params;
+
+        // Read current configuration from available locations
+        const configPath = findMcpoConfigPath();
+        if (!fs.existsSync(configPath)) {
+            return res.status(404).json({ error: 'MCPO configuration file not found', pathTried: configPath });
+        }
+
+        const configContent = fs.readFileSync(configPath, 'utf8');
+        const config = JSON.parse(configContent);
+
+        // Check if server exists
+        if (!config.mcpServers || !config.mcpServers[serverName]) {
+            return res.status(404).json({ error: `Server "${serverName}" not found` });
+        }
+
+        // Remove server
+        delete config.mcpServers[serverName];
+
+        // Write updated configuration
+        const updatedConfig = JSON.stringify(config, null, 2);
+        fs.writeFileSync(configPath, updatedConfig, 'utf8');
+
+        res.json({
+            success: true,
+            message: `MCP server "${serverName}" removed successfully`,
+            config: config
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: 'Failed to remove MCP server',
+            message: error.message
+        });
+    }
+});
+
+// Get available MCP server templates/presets
+app.get('/api/mcpo/templates', (req, res) => {
+    const templates = {
+        'stdio': {
+            name: 'Standard I/O Server',
+            description: 'MCP server that communicates via standard input/output',
+            config: {
+                command: 'npx',
+                args: ['-y', '@modelcontextprotocol/server-example'],
+                description: 'Example MCP server description'
+            }
+        },
+        'http': {
+            name: 'HTTP Server',
+            description: 'MCP server accessible via HTTP endpoints',
+            config: {
+                type: 'streamable-http',
+                url: 'http://localhost:8080/mcp',
+                description: 'HTTP-based MCP server',
+                headers: {
+                    'Authorization': 'Bearer your-api-key',
+                    'Content-Type': 'application/json'
+                }
+            }
+        },
+        'sse': {
+            name: 'Server-Sent Events',
+            description: 'MCP server using Server-Sent Events for communication',
+            config: {
+                type: 'sse',
+                url: 'http://localhost:8080/sse',
+                description: 'SSE-based MCP server',
+                headers: {
+                    'Authorization': 'Bearer your-api-key'
+                }
+            }
+        }
+    };
+
+    res.json(templates);
+});
+
+// Get MCP servers with health status
+app.get('/api/mcpo/servers', async (req, res) => {
+    try {
+        const mcpServers = await getMcpServers();
+        res.json({
+            success: true,
+            servers: mcpServers,
+            count: mcpServers.length
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: 'Failed to get MCP servers',
             message: error.message
         });
     }

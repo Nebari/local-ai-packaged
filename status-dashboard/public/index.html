@@ -341,6 +341,139 @@
             transform: translateY(-1px);
         }
 
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.90) 100%);
+            margin: 5% auto;
+            padding: 2rem;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 600px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(20px);
+            position: relative;
+        }
+
+        .close {
+            color: #666;
+            float: right;
+            font-size: 2rem;
+            font-weight: bold;
+            position: absolute;
+            top: 1rem;
+            right: 1.5rem;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.8rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            font-size: 1rem;
+            background: rgba(255, 255, 255, 0.8);
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #10b981;
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        .server-config-section {
+            background: rgba(255, 255, 255, 0.4);
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .server-config-section h3 {
+            margin-top: 0;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        #mcpServersList {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .server-item {
+            background: rgba(255, 255, 255, 0.6);
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .server-info h4 {
+            margin: 0 0 0.5rem 0;
+            color: #333;
+        }
+
+        .server-info p {
+            margin: 0;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .server-actions button {
+            padding: 0.4rem 1rem;
+            margin-left: 0.5rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        #mcpConfigContent {
+            background: rgba(0, 0, 0, 0.8);
+            color: #00ff00;
+            padding: 1.5rem;
+            border-radius: 10px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+        }
+
         .error {
             background: rgba(239, 68, 68, 0.1);
             border: 1px solid rgba(239, 68, 68, 0.3);
@@ -388,6 +521,111 @@
                 </button>
             </div>
             <div id="operationStatus" class="operation-status"></div>
+        </div>
+
+        <div class="management-controls">
+            <div class="management-title">🔧 MCP Server Management</div>
+            <div class="control-buttons">
+                <button class="control-btn btn-start" onclick="showMcpServerForm()">
+                    ➕ Add MCP Server
+                </button>
+                <button class="control-btn btn-restart" onclick="loadMcpServers()">
+                    📋 View Servers
+                </button>
+                <button class="control-btn btn-stop" onclick="showMcpConfig()">
+                    ⚙️ View Config
+                </button>
+            </div>
+            <div id="mcpOperationStatus" class="operation-status"></div>
+        </div>
+
+        <!-- MCP Server Form Modal -->
+        <div id="mcpServerModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <span class="close" onclick="closeMcpServerForm()">&times;</span>
+                <h2>Add New MCP Server</h2>
+
+                <div class="form-group">
+                    <label for="serverTemplate">Server Type:</label>
+                    <select id="serverTemplate" onchange="loadServerTemplate()">
+                        <option value="">Select a template...</option>
+                        <option value="stdio">Standard I/O Server</option>
+                        <option value="http">HTTP Server</option>
+                        <option value="sse">Server-Sent Events</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="serverName">Server Name:</label>
+                    <input type="text" id="serverName" placeholder="my-new-server" pattern="[a-zA-Z0-9_-]+"
+                        title="Only letters, numbers, hyphens, and underscores allowed">
+                </div>
+
+                <div class="form-group">
+                    <label for="serverDescription">Description:</label>
+                    <input type="text" id="serverDescription" placeholder="Brief description of the server">
+                </div>
+
+                <div id="stdio-config" class="server-config-section" style="display: none;">
+                    <h3>Standard I/O Configuration</h3>
+                    <div class="form-group">
+                        <label for="stdioCommand">Command:</label>
+                        <input type="text" id="stdioCommand" placeholder="npx" value="npx">
+                    </div>
+                    <div class="form-group">
+                        <label for="stdioArgs">Arguments (one per line):</label>
+                        <textarea id="stdioArgs" rows="3"
+                            placeholder="-y&#10;@modelcontextprotocol/server-example"></textarea>
+                    </div>
+                </div>
+
+                <div id="http-config" class="server-config-section" style="display: none;">
+                    <h3>HTTP Server Configuration</h3>
+                    <div class="form-group">
+                        <label for="httpUrl">URL:</label>
+                        <input type="url" id="httpUrl" placeholder="http://localhost:8080/mcp">
+                    </div>
+                    <div class="form-group">
+                        <label for="httpApiKey">API Key (optional):</label>
+                        <input type="text" id="httpApiKey" placeholder="your-api-key">
+                    </div>
+                </div>
+
+                <div id="sse-config" class="server-config-section" style="display: none;">
+                    <h3>Server-Sent Events Configuration</h3>
+                    <div class="form-group">
+                        <label for="sseUrl">SSE Endpoint URL:</label>
+                        <input type="url" id="sseUrl" placeholder="http://localhost:8080/sse">
+                    </div>
+                    <div class="form-group">
+                        <label for="sseApiKey">API Key (optional):</label>
+                        <input type="text" id="sseApiKey" placeholder="your-api-key">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <button class="control-btn btn-start" onclick="addMcpServer()">Add Server</button>
+                    <button class="control-btn btn-stop" onclick="closeMcpServerForm()">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MCP Servers List Modal -->
+        <div id="mcpServersModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <span class="close" onclick="closeMcpServersList()">&times;</span>
+                <h2>Current MCP Servers</h2>
+                <div id="mcpServersList"></div>
+            </div>
+        </div>
+
+        <!-- MCP Config Modal -->
+        <div id="mcpConfigModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <span class="close" onclick="closeMcpConfig()">&times;</span>
+                <h2>MCPO Configuration</h2>
+                <pre id="mcpConfigContent"></pre>
+            </div>
         </div>
 
         <div id="loading" class="loading">
@@ -456,11 +694,19 @@
 
             const { overall, categories } = statusData;
 
-            // Update overview
+            // Update overview with MCP servers breakdown
             document.getElementById('total-services').textContent = overall.total;
             document.getElementById('healthy-services').textContent = overall.healthy;
             document.getElementById('unhealthy-services').textContent = overall.unhealthy;
             document.getElementById('system-status').textContent = overall.status.toUpperCase();
+
+            // Update breakdown info if MCP servers are present
+            const totalLabel = document.querySelector('#total-services').nextElementSibling;
+            if (overall.mcpServers > 0) {
+                totalLabel.innerHTML = `Services <small>(${overall.regularServices} regular + ${overall.mcpServers} MCP)</small>`;
+            } else {
+                totalLabel.textContent = 'Services';
+            }
             document.getElementById('last-updated').textContent = new Date(overall.lastUpdated).toLocaleString();
 
             // Set system status color
@@ -510,11 +756,16 @@
             const statusClass = `status-${service.status}`;
             const badgeClass = `badge-${service.status}`;
 
+            // Special styling for MCP servers
+            const isMcpServer = service.type === 'mcp-server';
+            const mcpIcon = isMcpServer ? '🔌 ' : '';
+            const mcpClass = isMcpServer ? ' mcp-server' : '';
+
             card.innerHTML = `
                 <div class="service-header">
                     <div class="service-name">
                         <span class="status-indicator ${statusClass}"></span>
-                        ${service.name}
+                        ${mcpIcon}${service.name}
                     </div>
                     <div class="status-badge ${badgeClass}">
                         ${service.status}
@@ -526,22 +777,25 @@
                 <div class="service-metrics">
                     ${service.statusCode ? `<div class="metric">📊 ${service.statusCode}</div>` : ''}
                     ${service.responseTime ? `<div class="metric">⚡ ${service.responseTime}ms</div>` : ''}
-                    <div class="metric">🔗 ${service.url}</div>
+                    ${service.url ? `<div class="metric">🔗 ${service.url}</div>` : '<div class="metric">📝 STDIO Server</div>'}
                 </div>
                 ${service.externalUrl ? `<a href="${service.externalUrl}" target="_blank" class="external-link">🌐 Open Service</a>` : ''}
-                ${service.error ? `<div style="color: #dc2626; font-size: 0.8rem; margin-top: 0.5rem;">❌ ${service.error}</div>` : ''}
-                <div class="service-controls">
-                    <button class="service-btn btn-start" onclick="performServiceAction('${service.name}', 'start')" title="Start ${service.name}">
-                        ▶️ Start
-                    </button>
-                    <button class="service-btn btn-stop" onclick="performServiceAction('${service.name}', 'stop')" title="Stop ${service.name}">
-                        ⏹️ Stop
-                    </button>
-                    <button class="service-btn btn-restart" onclick="performServiceAction('${service.name}', 'restart')" title="Restart ${service.name}">
-                        🔄 Restart
-                    </button>
+                ${service.error && service.error !== 'STDIO server - health assumed' ? `<div style="color: #dc2626; font-size: 0.8rem; margin-top: 0.5rem;">❌ ${service.error}</div>` : ''}
+                <div class="service-controls${mcpClass}">
+                    ${isMcpServer ? `
+                        <button class="btn-warning" onclick="removeMcpServerFromCard('${service.name}')">Remove MCP Server</button>
+                    ` : `
+                        <button class="btn-success" onclick="startService('${service.name.toLowerCase().replace(/\s+/g, '-')}')">Start</button>
+                        <button class="btn-warning" onclick="restartService('${service.name.toLowerCase().replace(/\s+/g, '-')}')">Restart</button>
+                        <button class="btn-stop" onclick="stopService('${service.name.toLowerCase().replace(/\s+/g, '-')}')">Stop</button>
+                    `}
                 </div>
             `;
+
+            if (isMcpServer) {
+                card.style.border = '2px solid #8b5cf6';
+                card.style.background = 'linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(168, 85, 247, 0.05))';
+            }
 
             return card;
         }
@@ -645,7 +899,327 @@
             }
         }
 
+        // MCP Server Management Functions
+        let mcpTemplates = {};
+
+        async function loadMcpTemplates() {
+            try {
+                const response = await fetch('/api/mcpo/templates');
+                mcpTemplates = await response.json();
+            } catch (error) {
+                console.error('Failed to load MCP templates:', error);
+            }
+        }
+
+        function showMcpServerForm() {
+            document.getElementById('mcpServerModal').style.display = 'block';
+        }
+
+        function closeMcpServerForm() {
+            document.getElementById('mcpServerModal').style.display = 'none';
+            // Reset form
+            document.getElementById('serverTemplate').value = '';
+            document.getElementById('serverName').value = '';
+            document.getElementById('serverDescription').value = '';
+            hideAllConfigSections();
+        }
+
+        function hideAllConfigSections() {
+            document.querySelectorAll('.server-config-section').forEach(section => {
+                section.style.display = 'none';
+            });
+        }
+
+        function loadServerTemplate() {
+            const templateType = document.getElementById('serverTemplate').value;
+            hideAllConfigSections();
+
+            if (templateType && mcpTemplates[templateType]) {
+                const template = mcpTemplates[templateType];
+                const configSection = document.getElementById(`${templateType}-config`);
+                if (configSection) {
+                    configSection.style.display = 'block';
+
+                    // Pre-populate form fields based on template
+                    if (templateType === 'stdio' && template.config) {
+                        document.getElementById('stdioCommand').value = template.config.command || '';
+                        document.getElementById('stdioArgs').value = template.config.args ? template.config.args.join('\\n') : '';
+                    }
+                }
+            }
+        }
+
+        async function addMcpServer() {
+            const serverName = document.getElementById('serverName').value.trim();
+            const serverDescription = document.getElementById('serverDescription').value.trim();
+            const templateType = document.getElementById('serverTemplate').value;
+
+            if (!serverName || !templateType) {
+                alert('Server name and type are required');
+                return;
+            }
+
+            // Build server configuration based on template type
+            let serverConfig = {
+                description: serverDescription || `${templateType} MCP server`
+            };
+
+            try {
+                switch (templateType) {
+                    case 'stdio':
+                        const command = document.getElementById('stdioCommand').value.trim();
+                        const argsText = document.getElementById('stdioArgs').value.trim();
+                        const args = argsText ? argsText.split('\\n').filter(arg => arg.trim()) : [];
+
+                        if (!command) {
+                            alert('Command is required for stdio servers');
+                            return;
+                        }
+
+                        serverConfig.command = command;
+                        serverConfig.args = args;
+                        break;
+
+                    case 'http':
+                        const httpUrl = document.getElementById('httpUrl').value.trim();
+                        const httpApiKey = document.getElementById('httpApiKey').value.trim();
+
+                        if (!httpUrl) {
+                            alert('URL is required for HTTP servers');
+                            return;
+                        }
+
+                        serverConfig.type = 'streamable-http';
+                        serverConfig.url = httpUrl;
+
+                        if (httpApiKey) {
+                            serverConfig.headers = {
+                                'Authorization': `Bearer ${httpApiKey}`,
+                                'Content-Type': 'application/json'
+                            };
+                        }
+                        break;
+
+                    case 'sse':
+                        const sseUrl = document.getElementById('sseUrl').value.trim();
+                        const sseApiKey = document.getElementById('sseApiKey').value.trim();
+
+                        if (!sseUrl) {
+                            alert('SSE URL is required for SSE servers');
+                            return;
+                        }
+
+                        serverConfig.type = 'sse';
+                        serverConfig.url = sseUrl;
+
+                        if (sseApiKey) {
+                            serverConfig.headers = {
+                                'Authorization': `Bearer ${sseApiKey}`
+                            };
+                        }
+                        break;
+                }
+
+                // Send request to add server
+                const response = await fetch('/api/mcpo/servers', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        serverName: serverName,
+                        serverConfig: serverConfig
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    const mcpStatus = document.getElementById('mcpOperationStatus');
+                    mcpStatus.style.display = 'block';
+                    mcpStatus.className = 'operation-status operation-success';
+                    mcpStatus.innerHTML = `<strong>✅ Success!</strong><br>MCP server "${serverName}" added successfully. Hot reload will apply changes automatically.`;
+
+                    closeMcpServerForm();
+
+                    // Hide status message after 5 seconds
+                    setTimeout(() => {
+                        mcpStatus.style.display = 'none';
+                    }, 5000);
+                } else {
+                    alert(`Error: ${result.error || result.message}`);
+                }
+
+            } catch (error) {
+                console.error('Failed to add MCP server:', error);
+                alert(`Failed to add MCP server: ${error.message}`);
+            }
+        }
+
+        async function loadMcpServers() {
+            try {
+                const response = await fetch('/api/mcpo/servers');
+                const data = await response.json();
+
+                const serversListDiv = document.getElementById('mcpServersList');
+                serversListDiv.innerHTML = '';
+
+                if (data.success && data.servers && data.servers.length > 0) {
+                    data.servers.forEach(server => {
+                        const serverDiv = document.createElement('div');
+                        serverDiv.className = 'server-item';
+
+                        const statusIcon = server.status === 'healthy' ? '✅' : '❌';
+                        const statusClass = server.status === 'healthy' ? 'text-green-600' : 'text-red-600';
+                        const serverType = server.url ? 'HTTP/SSE' : 'STDIO';
+
+                        serverDiv.innerHTML = `
+                            <div class="server-info">
+                                <h4>${statusIcon} ${server.name} <span style="font-size: 0.8em; color: #666;">(${serverType})</span></h4>
+                                <p>${server.description || 'No description'}</p>
+                                <div style="font-size: 0.9em; margin-top: 0.5rem;">
+                                    <span class="${statusClass}" style="font-weight: bold;">Status: ${server.status}</span>
+                                    ${server.responseTime ? ` | Response: ${server.responseTime}ms` : ''}
+                                    ${server.statusCode && server.statusCode !== 'N/A' ? ` | Code: ${server.statusCode}` : ''}
+                                </div>
+                                ${server.url ? `<div style="font-size: 0.8em; color: #666; margin-top: 0.25rem;">URL: ${server.url}</div>` : ''}
+                                ${server.error && server.error !== 'STDIO server - health assumed' ? `<div style="color: #dc2626; font-size: 0.8em; margin-top: 0.25rem;">Error: ${server.error}</div>` : ''}
+                            </div>
+                            <div class="server-actions">
+                                <button class="btn-stop" onclick="removeMcpServer('${server.name}')">Remove</button>
+                            </div>
+                        `;
+                        serversListDiv.appendChild(serverDiv);
+                    });
+
+                    // Add summary
+                    const summaryDiv = document.createElement('div');
+                    summaryDiv.style.cssText = 'margin-top: 1rem; padding: 1rem; background: #f3f4f6; border-radius: 8px; font-size: 0.9em;';
+                    const healthyCount = data.servers.filter(s => s.status === 'healthy').length;
+                    summaryDiv.innerHTML = `<strong>Summary:</strong> ${data.servers.length} MCP servers configured (${healthyCount} healthy, ${data.servers.length - healthyCount} unhealthy)`;
+                    serversListDiv.appendChild(summaryDiv);
+                } else {
+                    serversListDiv.innerHTML = '<p>No MCP servers configured.</p>';
+                }
+
+                document.getElementById('mcpServersModal').style.display = 'block';
+
+            } catch (error) {
+                console.error('Failed to load MCP servers:', error);
+                alert(`Failed to load MCP servers: ${error.message}`);
+            }
+        }
+
+        function closeMcpServersList() {
+            document.getElementById('mcpServersModal').style.display = 'none';
+        }
+
+        async function removeMcpServer(serverName) {
+            if (!confirm(`Are you sure you want to remove the MCP server "${serverName}"?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/mcpo/servers/${serverName}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    const mcpStatus = document.getElementById('mcpOperationStatus');
+                    mcpStatus.style.display = 'block';
+                    mcpStatus.className = 'operation-status operation-success';
+                    mcpStatus.innerHTML = `<strong>✅ Success!</strong><br>MCP server "${serverName}" removed successfully.`;
+
+                    // Reload the servers list
+                    loadMcpServers();
+
+                    // Hide status message after 5 seconds
+                    setTimeout(() => {
+                        mcpStatus.style.display = 'none';
+                    }, 5000);
+                } else {
+                    alert(`Error: ${result.error || result.message}`);
+                }
+
+            } catch (error) {
+                console.error('Failed to remove MCP server:', error);
+                alert(`Failed to remove MCP server: ${error.message}`);
+            }
+        }
+
+        async function showMcpConfig() {
+            try {
+                const response = await fetch('/api/mcpo/config');
+                const config = await response.json();
+
+                document.getElementById('mcpConfigContent').textContent = JSON.stringify(config, null, 2);
+                document.getElementById('mcpConfigModal').style.display = 'block';
+
+            } catch (error) {
+                console.error('Failed to load MCP config:', error);
+                alert(`Failed to load MCP config: ${error.message}`);
+            }
+        }
+
+        function closeMcpConfig() {
+            document.getElementById('mcpConfigModal').style.display = 'none';
+        }
+
+        // Remove MCP server from service card
+        async function removeMcpServerFromCard(serverName) {
+            if (!confirm(`Are you sure you want to remove the MCP server "${serverName}"?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/mcpo/servers/${serverName}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Refresh the entire dashboard to show updated counts
+                    await loadStatus();
+
+                    // Show success message briefly
+                    const successMessage = document.createElement('div');
+                    successMessage.style.cssText = `
+                        position: fixed; top: 20px; right: 20px; z-index: 1000;
+                        background: #10b981; color: white; padding: 1rem 2rem;
+                        border-radius: 8px; font-weight: bold;
+                    `;
+                    successMessage.innerHTML = `✅ MCP server "${serverName}" removed successfully`;
+                    document.body.appendChild(successMessage);
+
+                    setTimeout(() => {
+                        document.body.removeChild(successMessage);
+                    }, 3000);
+                } else {
+                    alert(`Error: ${result.error || result.message}`);
+                }
+
+            } catch (error) {
+                console.error('Failed to remove MCP server:', error);
+                alert(`Failed to remove MCP server: ${error.message}`);
+            }
+        }
+
+        // Close modals when clicking outside
+        window.onclick = function (event) {
+            const modals = ['mcpServerModal', 'mcpServersModal', 'mcpConfigModal'];
+            modals.forEach(modalId => {
+                const modal = document.getElementById(modalId);
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        }
+
         // Initialize
+        loadMcpTemplates();
         startAutoRefresh();
 
         // Manual refresh on focus

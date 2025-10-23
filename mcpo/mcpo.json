@@ -2,22 +2,36 @@
   "mcpServers": {
     "memory": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-memory"
+      ],
       "description": "In-memory storage for temporary data and session state"
     },
     "time": {
-      "command": "uvx", 
-      "args": ["mcp-server-time", "--local-timezone=America/Pacific"],
+      "command": "uvx",
+      "args": [
+        "mcp-server-time",
+        "--local-timezone=America/Pacific"
+      ],
       "description": "Time and date utilities with timezone support"
     },
     "filesystem": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"],
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/tmp"
+      ],
       "description": "File system operations for temporary data access"
     },
     "sqlite": {
       "command": "uvx",
-      "args": ["mcp-server-sqlite", "--db-path", "/app/data/mcpo.db"],
+      "args": [
+        "mcp-server-sqlite",
+        "--db-path",
+        "/app/data/mcpo.db"
+      ],
       "description": "SQLite database operations for persistent data"
     }
   }
