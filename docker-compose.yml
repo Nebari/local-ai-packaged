@@ -748,12 +748,12 @@ services:
       - default
       - keiken-network
 
-  # PRAISONAI - Multi-Agent Teams API
-  praisonai-teams:
+  # KEIKEN - Multi-Agent Teams API
+  keiken-teams-api:
     build:
       context: ./praisonai
       dockerfile: Dockerfile
-    container_name: praisonai-teams
+    container_name: keiken-teams-api
     restart: unless-stopped
     ports:
       - "8766:8000"
@@ -769,14 +769,56 @@ services:
       - default
       - keiken-network
 
-  praisonai-ui:
+  keiken-main-ui:
     build:
       context: ./praisonai
       dockerfile: Dockerfile.streamlit
-    container_name: praisonai-ui
+    container_name: keiken-main-ui
     restart: unless-stopped
     ports:
       - "8501:8501"
+    environment:
+      - PYTHONUNBUFFERED=1
+    networks:
+      - default
+      - keiken-network
+
+  keiken-ui-interface:
+    build:
+      context: ./praisonai
+      dockerfile: Dockerfile.ui
+    container_name: keiken-ui-interface
+    restart: unless-stopped
+    ports:
+      - "8582:8082"
+    environment:
+      - PYTHONUNBUFFERED=1
+    networks:
+      - default
+      - keiken-network
+
+  keiken-code-interface:
+    build:
+      context: ./praisonai
+      dockerfile: Dockerfile.code
+    container_name: keiken-code-interface
+    restart: unless-stopped
+    ports:
+      - "8502:8501"
+    environment:
+      - PYTHONUNBUFFERED=1
+    networks:
+      - default
+      - keiken-network
+
+  keiken-chat-interface:
+    build:
+      context: ./praisonai
+      dockerfile: Dockerfile.chat
+    container_name: keiken-chat-interface
+    restart: unless-stopped
+    ports:
+      - "8503:8503"
     environment:
       - PYTHONUNBUFFERED=1
     networks:

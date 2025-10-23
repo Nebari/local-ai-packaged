@@ -77,12 +77,29 @@ openmemory.nebarisoftware.com {
     reverse_proxy openmemory-mcp:8000
 }
 
-praisonai.nebarisoftware.com {
-    reverse_proxy praisonai-teams:8000
+# Keiken - Main Demo Platform
+keikendemo.nebarisoftware.com {
+    reverse_proxy keiken-main-ui:8501
 }
 
-praisonai-ui.nebarisoftware.com {
-    reverse_proxy praisonai-ui:8501
+# Keiken - UI Interface (Chainlit Multi-Agent)
+ui.keikendemo.nebarisoftware.com {
+    reverse_proxy keiken-ui-interface:8082
+}
+
+# Keiken - Code Interface
+code.keikendemo.nebarisoftware.com {
+    reverse_proxy keiken-code-interface:8501
+}
+
+# Keiken - Chat Interface
+chat.keikendemo.nebarisoftware.com {
+    reverse_proxy keiken-chat-interface:8503
+}
+
+# Keiken - Teams API Backend
+api.keikendemo.nebarisoftware.com {
+    reverse_proxy keiken-teams-api:8000
 }
 
 # Pinokio - AI App Launcher

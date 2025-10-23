@@ -9,31 +9,29 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install PraisonAI with UI dependencies
+# Install Python dependencies
 RUN pip install --no-cache-dir \
-    praisonai \
-    "praisonai[ui]" \
-    "praisonai[chat]" \
-    "praisonai[code]" \
     chainlit \
-    fastapi \
-    uvicorn[standard] \
-    duckduckgo-search \
-    requests
+    requests \
+    pandas
 
-# Copy application files
-COPY . .
+# Copy the Keiken UI interface application
+COPY ui_interface.py .
 
 # Create necessary directories
-RUN mkdir -p /app/data /app/.praison
+RUN mkdir -p /app/data /app/.keiken
 
 # Set environment variables for Chainlit
 ENV CHAINLIT_PORT=8082
-ENV CHAINLIT_APP_ROOT=/app/.praison
+ENV CHAINLIT_APP_ROOT=/app/.keiken
 ENV PYTHONUNBUFFERED=1
 
 # Expose the UI port
 EXPOSE 8082
 
-# Start the PraisonAI Chainlit UI
-CMD ["python", "-m", "praisonai", "ui"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8082/ || exit 1
+
+# Start the Keiken Chainlit UI
+CMD ["chainlit", "run", "ui_interface.py", "--host", "0.0.0.0", "--port", "8082"]
