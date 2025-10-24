@@ -1,3 +1,5 @@
+name: keiken
+
 include:
   - ./supabase/docker/docker-compose.yml
 
